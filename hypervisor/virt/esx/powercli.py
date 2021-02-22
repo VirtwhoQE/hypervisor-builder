@@ -57,7 +57,3 @@ class PowerCLI():
 
     def guest_resume():
         pass
-
-
-cli = PowerCLI('10.73.131.152', admin_user='administrator@vsphere.local', admin_passwd='Welcome1!', ssh_user='Administrator', ssh_passwd='Welcome1')
-cli.info()
