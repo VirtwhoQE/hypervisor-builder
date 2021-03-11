@@ -88,13 +88,16 @@ class SSHConnect:
         :param str command: The command to run
         """
         ssh = self._connect()
+        logger.info(">>> {}".format(cmd))
         stdin, stdout, stderr = ssh.exec_command(cmd)
         code = stdout.channel.recv_exit_status()
         stdout, stderr = stdout.read(), stderr.read()
         ssh.close()
         if not stderr:
+            logger.info("<<< stdout\n{}".format(stdout.decode()))
             return code, stdout.decode()
         else:
+            logger.info("<<< stderr\n{}".format(stderr.decode()))
             return code, stderr.decode()
 
     def get_file(self, remote_file, local_file):
