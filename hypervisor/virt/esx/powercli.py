@@ -32,11 +32,11 @@ class PowerCLI:
                 self.admin_passwd)
         )
         self.ssh = SSHConnect(self.server, user=self.ssh_user, pwd=self.ssh_passwd)
-        self.json = 'ConvertTo-Json -Depth 1 '
+        self.json = 'ConvertTo-Json -Depth 1'
 
     def _format_list(self, ret=0, stdout=None):
         """
-        Translate the json to python list data
+        Convert the json to python list data
         :param ret: return code
         :param stdout: output for the execute command
         :return: the list after json.loads
@@ -47,7 +47,7 @@ class PowerCLI:
 
     def _format_dict(self, ret=0, stdout=None):
         """
-        Translate the json to python dict data
+        Convert the json to python dict data
         :param ret: return code
         :param stdout: output for the execute command
         :return: the dict after json.loads
