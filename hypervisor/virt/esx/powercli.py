@@ -9,7 +9,9 @@ logger = getLogger(__name__)
 class PowerCLI:
     def __init__(self, server, admin_user, admin_passwd, ssh_user, ssh_passwd):
         """
-
+        Collect vcenter information, provide Host add/delete and
+        Guest add/delete/start/stop/suspend/resume functions
+        via Powercli Command line
         :param server: the ip for the vcenter server
         :param admin_user: the user for the vcenter server
         :param admin_passwd: the password for the vcenter server
@@ -22,21 +24,17 @@ class PowerCLI:
         self.ssh_user = ssh_user
         self.ssh_passwd = ssh_passwd
         self.cert = (
-            "powershell Connect-VIServer "
-            "-Server {0} "
-            "-Protocol https "
-            "-User {1} "
-            "-Password {2};".format(
-                self.server,
-                self.admin_user,
-                self.admin_passwd)
+            f'powershell Connect-VIServer '
+            f'-Server {self.server} '
+            f'-Protocol https '
+            f'-User {self.admin_user} '
+            f'-Password {self.admin_passwd};'
         )
         self.ssh = SSHConnect(self.server, user=self.ssh_user, pwd=self.ssh_passwd)
-        self.json = 'ConvertTo-Json -Depth 1'
 
-    def _format_list(self, ret=0, stdout=None):
+    def _format(self, ret=0, stdout=None):
         """
-        Convert the json to python list data
+        Convert the json string to python list data
         :param ret: return code
         :param stdout: output for the execute command
         :return: the list after json.loads
@@ -45,28 +43,16 @@ class PowerCLI:
         if ret == 0 and stdout is not None:
             return json.loads(stdout)
 
-    def _format_dict(self, ret=0, stdout=None):
-        """
-        Convert the json to python dict data
-        :param ret: return code
-        :param stdout: output for the execute command
-        :return: the dict after json.loads
-        """
-        stdout = re.findall(r'[{][\W\w]+[}]', stdout)[0]
-        if ret == 0 and stdout is not None:
-            return json.loads(stdout)
-
     def info(self):
         """
         Get the VMhost info
         :return: the VMHosts info
         """
-        cmd = "{0} Get-VMHost | Select * -ExcludeProperty ExtensionData | {1} ".format(
-            self.cert, self.json)
+        cmd = f'{self.cert} ConvertTo-Json @(Get-VMHost | Select * -ExcludeProperty ExtensionData)'
         ret, output = self.ssh.runcmd(cmd)
-        output = self._format_list(ret, output)
+        output = self._format(ret, output)
         for host in output:
-            logger.info("Get ESXi Host: {}".format(host['Name']))
+            logger.info(f"Get ESXi Host: {host['Name']}")
         return output
 
     def guest_search(self, guest_name):
@@ -75,10 +61,10 @@ class PowerCLI:
         :param guest_name: name for the specific guest
         :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
         """
-        cmd = "{0} Get-VM {1} | Select * -ExcludeProperty ExtensionData | {2}".format(
-            self.cert, guest_name, self.json)
+        cmd = f'{self.cert} ConvertTo-Json @(' \
+            f'Get-VM {guest_name} | Select * -ExcludeProperty ExtensionData)'
         ret, output = self.ssh.runcmd(cmd)
-        output = self._format_dict(ret, output)
+        output = self._format(ret, output)[0]
         host_name = output["VMHost"]["Name"]
         guest_msgs = {
             'guest_name': output['Name'],
@@ -104,10 +90,9 @@ class PowerCLI:
         :return: uuid for esx guest
         """
         config = "%{(Get-View $_.Id).config}"
-        cmd = "{0} Get-VM {1} | {2} | {3}".format(
-            self.cert, guest_name, config, self.json)
+        cmd = f'{self.cert} ConvertTo-Json @(Get-VM {guest_name} | {config})'
         ret, output = self.ssh.runcmd(cmd)
-        output = self._format_dict(ret, output)
+        output = self._format(ret, output)[0]
         return output["Uuid"]
 
     def host_uuid(self, host_name):
@@ -117,10 +102,9 @@ class PowerCLI:
         :return: uuid for esx host
         """
         sysinfo = "%{(Get-View $_.Id).Hardware.SystemInfo}"
-        cmd = "{0} Get-VMHost -Name {1} | {2} | {3} ".format(
-            self.cert, host_name, sysinfo, self.json)
+        cmd = f'{self.cert} ConvertTo-Json @(Get-VMHost -Name {host_name} | {sysinfo})'
         ret, output = self.ssh.runcmd(cmd)
-        output = self._format_dict(ret, output)
+        output = self._format(ret, output)[0]
         return output["Uuid"]
 
     def host_hwuuid(self, host_name):
@@ -130,10 +114,9 @@ class PowerCLI:
         :return: hwuuid for esx host
         """
         moref = "%{(Get-View $_.Id).MoRef}"
-        cmd = "{0} Get-VMHost -Name {1} | {2} | {3}".format(
-            self.cert, host_name, moref, self.json)
+        cmd = f'{self.cert} ConvertTo-Json @(Get-VMHost -Name {host_name} | {moref})'
         ret, output = self.ssh.runcmd(cmd)
-        output = self._format_dict(ret, output)
+        output = self._format(ret, output)[0]
         return output["Value"]
 
     def host_add(self):
