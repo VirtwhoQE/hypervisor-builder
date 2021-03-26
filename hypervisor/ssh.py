@@ -1,9 +1,7 @@
 import os
 import paramiko
 from six import BytesIO
-from hypervisor.log import getLogger
-
-logger = getLogger(__name__)
+from hypervisor import logger
 
 
 class SSHConnect:
@@ -85,7 +83,7 @@ class SSHConnect:
 
     def runcmd(self, cmd):
         """Executes SSH command on remote hostname.
-        :param str command: The command to run
+        :param str cmd: The command to run
         """
         ssh = self._connect()
         logger.info(">>> {}".format(cmd))
