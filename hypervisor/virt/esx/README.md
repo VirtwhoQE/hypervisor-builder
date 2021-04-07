@@ -1,4 +1,4 @@
-# Hypervisor-builder: ESX hypervisor
+# Hypervisor-builder: vCenter
 Hyperivosr-builder tool supports the vcenter hypervisor by PowerCLI Commands following the doc:  
 [VMware vSphere PowerCLI Cmdlets Reference](https://vdc-repo.vmware.com/vmwb-repository/dcr-public/f2319b2a-6378-4635-a1cd-90b14949b62a/0ac4f829-f79b-40a6-ac10-d22ec76937ec/doc/index.html)
 
@@ -20,16 +20,16 @@ from hypervisor.virt.esx.powercli import PowerCLI
 
 def test_powercli():
     # set up the values
-    server = config.server
-    admin_user = config.admin_user
-    admin_passwd = config.admin_passwd
-    ssh_user = config.ssh_user
-    ssh_passwd = config.ssh_passwd
-    guest_name = config.guest_name
-    esx_host = config.esx_host
-    esx_host_user = config.esx_host_user
-    esx_host_pwd = config.esx_host_pwd
-    image_path = config.image_path
+    server = ''
+    admin_user = ''
+    admin_passwd = ''
+    ssh_user = ''
+    ssh_passwd = ''
+    guest_name = ''
+    esx_host = ''
+    esx_host_user = ''
+    esx_host_pwd = ''
+    image_path = ''
 
     # Instantiate PowerCLI object
     cli = PowerCLI(server, admin_user, admin_passwd, ssh_user, ssh_passwd)
