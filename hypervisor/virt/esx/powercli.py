@@ -62,8 +62,8 @@ class PowerCLI:
         :param host_ssh_user: the ssh username for the host
         :param host_ssh_pwd: the ssh password for the host
         :param guest_name: the name for the new virtual machine
-        :param image_path: the path for the guest image
-        :return:
+        :param image_path: the path for the guest image which from the remote web
+        :return: create successfully, return True, else, return False
         """
         self.guest_images(host, host_ssh_user, host_ssh_pwd, guest_name, image_path)
         data_store = self.host_search(host)["host_data_store"]
@@ -72,15 +72,17 @@ class PowerCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_exist(guest_name):
             logger.info("Succeeded to add vcenter guest")
+            self.guest_start(guest_name)
+            return True
         else:
-            raise FailException("Failed to add vcenter guest")
-        return self.guest_start(guest_name)
+            logger.error("Failed to add vcenter guest")
+            return False
 
     def guest_del(self, guest_name):
         """
         Remove the specified virtual machines from the vCenter Server system.
         :param guest_name: the virtual machines you want to remove.
-        :return:
+        :return: remove successfully, return True, else, return False.
         """
         if self.guest_search(guest_name)['guest_state'] is not 1:
             self.guest_stop(guest_name)
@@ -88,14 +90,16 @@ class PowerCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and not self.guest_exist(guest_name):
             logger.info("Succeeded to delete vcenter guest")
+            return True
         else:
-            raise FailException("Failed to delete vcenter guest")
+            logger.error("Succeeded to delete vcenter guest")
+            return False
 
     def guest_exist(self, guest_name):
         """
         Check if the esx guest exists
         :param guest_name: the name for the guest
-        :return:
+        :return: guest exists, return True, else, return False.
         """
         cmd = f'{self.cert} Get-VM -Name {guest_name}'
         ret, _ = self.ssh.runcmd(cmd)
@@ -132,12 +136,17 @@ class PowerCLI:
         """
         Resume virtual machines
         :param guest_name: the virtual machines you want to resume.
-        :return:
+        :return: resume successfully, return True, else, return False.
         """
         cmd = f'{self.cert} Start-VM -VM {guest_name} -Confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 1:
             logger.info("Succeeded to resume vcenter guest")
+            return True
+        else:
+            logger.info("Failed to resume vcenter guest")
+            return False
+
 
     def guest_search(self, guest_name, uuid_info=False):
         """
@@ -177,35 +186,47 @@ class PowerCLI:
         """
         Power on virtual machines.
         :param guest_name: the virtual machines you want to power on.
-        :return:
+        :return: power on successfully, return True, else, return False.
         """
         cmd = f'{self.cert} Start-VM -VM {guest_name} -Confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 1:
             logger.info("Succeeded to start vcenter guest")
-            return self.guest_search(guest_name)['guest_ip']
+            return True
+        else:
+            logger.info("Failed to start vcenter guest")
+            return False
 
     def guest_stop(self, guest_name):
         """
         Power off virtual machines.
         :param guest_name: the virtual machines you want to power off.
-        :return:
+        :return: stop successfully, return True, else, return False.
         """
         cmd = f'{self.cert} Stop-VM -VM {guest_name} -Kill -Confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 0:
             logger.info("Succeeded to stop vcenter guest")
+            return True
+        else:
+            logger.info("Failed to stop vcenter guest")
+            return False
 
     def guest_suspend(self, guest_name):
         """
         Suspend virtual machines.
         :param guest_name: the virtual machines you want to suspend.
-        :return:
+        :return: suspend successfully, return True, else, return False.
         """
         cmd = f'{self.cert} Suspend-VM -VM {guest_name} -Confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 2:
             logger.info("Succeeded to suspend vcenter guest")
+            return True
+        else:
+            logger.info("Failed to suspend vcenter guest")
+            return False
+
 
     def guest_uuid(self, guest_name):
         """
