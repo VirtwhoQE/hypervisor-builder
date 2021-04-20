@@ -46,7 +46,7 @@ class HypervCLI:
         """
         Search the specific guest, return the expected attributes
         :param guest_name: name for the specific guest
-        :param uuid_info: if you need the uuid_info: guest_uuid, hyperv_uuid, hyperv_hwuuid
+        :param uuid_info: if you need the uuid_info: guest_uuid, hyperv_uuid
         :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
                  guest_state: guest_poweron:1, guest_poweroff:0, guest_Suspended:2
                  hyperv_state: host_poweron:1, host_poweroff:0
