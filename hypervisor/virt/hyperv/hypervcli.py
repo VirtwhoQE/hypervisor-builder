@@ -101,6 +101,16 @@ class HypervCLI:
         output = self._format(ret, output)[0]
         return output["UUID"]
 
+    def host_switch(self):
+        """
+        Get the switch name for hyperv manager
+        :return: the switch name
+        """
+        cmd = "PowerShell ConvertTo-Json @(Get-VMSwitch)"
+        ret, output = self.ssh.runcmd(cmd)
+        output = self._format(ret, output)[0]
+        return output['Name']
+
     def guest_image(self, guest_name, image_path):
         cmd = 'PowerShell New-Item -path C:\ -Name hyperv_img -Type Directory'
         self.ssh.runcmd(cmd)
@@ -137,10 +147,11 @@ class HypervCLI:
         if self.guest_exist(guest_name):
             self.guest_del(guest_name)
         self.guest_image(guest_name, image_path)
+        switch_name = self.host_switch()
         if '8.' in guest_name:
-            options = "-MemoryStartupBytes 2GB -SwitchName virtual_switch -Generation 2"
+            options = f'-MemoryStartupBytes 2GB -SwitchName {switch_name} -Generation 2'
         else:
-            options = "-MemoryStartupBytes 1GB -SwitchName virtual_switch -Generation 1"
+            options = f'-MemoryStartupBytes 1GB -SwitchName {switch_name} -Generation 1'
         cmd = f"PowerShell New-VM -Name {guest_name} -VHDPath \"C:\hyperv_img\{guest_name}.vhdx\" {options}"
         self.ssh.runcmd(cmd)
         if self.guest_exist(guest_name):
@@ -158,7 +169,7 @@ class HypervCLI:
         :param guest_name: the virtual machines you want to remove.
         :return: remove successfully, return True, else, return False.
         """
-        if self.guest_search(guest_name)['guest_state'] != "Off":
+        if self.guest_search(guest_name)['guest_state'] is not 3:
             self.guest_stop(guest_name)
         cmd = f'PowerShell Remove-VM {guest_name} -force'
         ret, _ = self.ssh.runcmd(cmd)
