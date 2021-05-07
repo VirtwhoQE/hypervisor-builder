@@ -101,10 +101,10 @@ class HypervCLI:
         output = self._format(ret, output)[0]
         return output["UUID"]
 
-    def host_switch(self):
+    def virtual_switch(self):
         """
-        Get the switch name for hyperv manager
-        :return: the switch name
+        Get the name for the virtual network switch
+        :return: the virtual switch name
         """
         cmd = "PowerShell ConvertTo-Json @(Get-VMSwitch)"
         ret, output = self.ssh.runcmd(cmd)
@@ -112,6 +112,12 @@ class HypervCLI:
         return output['Name']
 
     def guest_image(self, guest_name, image_path):
+        """
+        Prepare the guest image for hyperv hypervisor
+        :param guest_name: the name for the new virtual machine
+        :param image_path: the path for the guest image
+        :return:
+        """
         cmd = 'PowerShell New-Item -path C:\ -Name hyperv_img -Type Directory'
         self.ssh.runcmd(cmd)
         cmd = 'PowerShell Get-ChildItem C:\hyperv_img'
@@ -135,33 +141,42 @@ class HypervCLI:
         """
         cmd = "PowerShell Get-VM"
         ret, output = self.ssh.runcmd(cmd)
-        return not ret and guest_name in output
+        if not ret and guest_name in output:
+            logger.info(f'Succeed to find guest {guest_name }')
+            return True
+        else:
+            logger.info(f'Failed to find guest {guest_name}')
+            return False
 
     def guest_add(self, guest_name, image_path):
         """
         Create a new virtual machine.
         :param guest_name: the name for the new virtual machine
         :param image_path: the path for the guest image which from the remote web
-        :return: create successfully, return True, else, return False
+        :return: guest already existed, return None,
+                 create successfully, return True,
+                 else, return False
         """
         if self.guest_exist(guest_name):
-            self.guest_del(guest_name)
+            logger.warning(f'Guest {guest_name} has already existed')
+            return
         self.guest_image(guest_name, image_path)
-        switch_name = self.host_switch()
+        switch_name = self.virtual_switch()
         if '8.' in guest_name:
             options = f'-MemoryStartupBytes 2GB -SwitchName {switch_name} -Generation 2'
         else:
             options = f'-MemoryStartupBytes 1GB -SwitchName {switch_name} -Generation 1'
         cmd = f"PowerShell New-VM -Name {guest_name} -VHDPath \"C:\hyperv_img\{guest_name}.vhdx\" {options}"
-        self.ssh.runcmd(cmd)
-        if self.guest_exist(guest_name):
+        ret, _ = self.ssh.runcmd(cmd)
+        if not ret and self.guest_exist(guest_name):
             logger.info("Succeeded to add hyperv guest")
+            if '8.' in guest_name:
+                cmd = f"PowerShell Set-VMFirmware -VMName {guest_name} -EnableSecureBoot off"
+                self.ssh.runcmd(cmd)
+            return True
         else:
-            raise FailException("Failed to add hyperv guest")
-        if '8.' in guest_name:
-            cmd = f"PowerShell Set-VMFirmware -VMName {guest_name} -EnableSecureBoot off"
-            self.ssh.runcmd(cmd)
-        return self.guest_start(guest_name)
+            logger.error("Failed to add hyperv guest")
+            return False
 
     def guest_del(self, guest_name):
         """
