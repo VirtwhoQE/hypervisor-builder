@@ -173,10 +173,8 @@ class HypervCLI:
             if '8.' in guest_name:
                 cmd = f"PowerShell Set-VMFirmware -VMName {guest_name} -EnableSecureBoot off"
                 self.ssh.runcmd(cmd)
-            return True
         else:
-            logger.error("Failed to add hyperv guest")
-            return False
+            raise FailException("Failed to add hyperv guest")
 
     def guest_del(self, guest_name):
         """
@@ -190,10 +188,8 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and not self.guest_exist(guest_name):
             logger.info("Succeeded to delete hyperv guest")
-            return True
         else:
-            logger.error("Failed to delete hyperv guest")
-            return False
+            raise FailException("Failed to delete hyperv guest")
 
     def guest_start(self, guest_name):
         """
@@ -205,10 +201,8 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 2:
             logger.info("Succeeded to start hyperv guest")
-            return True
         else:
-            logger.error("Failed to start vcenter guest")
-            return False
+            raise FailException("Failed to start vcenter guest")
 
     def guest_stop(self, guest_name):
         """
@@ -220,9 +214,8 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 3:
             logger.info("Succeeded to stop hyperv guest")
-            return True
         else:
-            logger.error("Failed to stop hyperv guest")
+            raise FailException("Failed to stop hyperv guest")
 
     def guest_suspend(self, guest_name):
         """
@@ -234,9 +227,8 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 9:
             logger.info("Succeeded to suspend hyperv guest")
-            return True
         else:
-            logger.error("Failed to suspend hyperv guest")
+            raise FailException("Failed to suspend hyperv guest")
 
     def guest_resume(self, guest_name):
         """
@@ -248,7 +240,5 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 2:
             logger.info("Succeeded to resume hyperv guest")
-            return True
         else:
-            logger.info("Failed to resume hyperv guest")
-            return False
+            raise FailException("Failed to resume hyperv guest")
