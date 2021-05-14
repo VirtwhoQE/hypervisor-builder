@@ -3,7 +3,7 @@ Hyperivosr-builder tool supports the Hyper-V hypervisor by PowerCLI Commands
 
 
 Provide functions:
-- Collect vcenter information  
+- Collect Hyper-V information
 - Host uuid
 - Guest search/add/delete/start/stop/suspend/resume  
 
