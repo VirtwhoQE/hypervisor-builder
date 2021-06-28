@@ -22,17 +22,24 @@ class RHVMCLI:
     def rhevm_shell_config(self, admin_server, admin_user, admin_passwd):
         api_url = "{0}/api".format(admin_server)
         ca_file = "/etc/pki/ovirt-engine/ca.pem"
-        options = "insecure = False\nno_paging = False\nfilter = False\ntimeout = -1"
-        cmd = "echo -e '[ovirt-shell]\nusername = {0}\npassword = {1}\nca_file = {2}\nurl = {3}\n{4}' > {5}"\
-                .format(admin_user, admin_passwd, ca_file, api_url, options, "/root/.ovirtshellrc")
+        options = "insecure = False\n" \
+                  "no_paging = False\n" \
+                  "filter = False\n" \
+                  "timeout = -1"
+        rhevm_shellrc = '/root/.ovirtshellrc'
+        cmd = f"echo -e '[ovirt-shell]\n" \
+            f"username = {admin_user}\n" \
+            f"password = {admin_passwd}\n" \
+            f"ca_file = {ca_file}\n" \
+            f"url = {api_url}\n{options}' > {rhevm_shellrc}"
         self.ssh.runcmd(cmd)
         self.ssh.runcmd("ovirt-aaa-jdbc-tool user unlock admin")
-        cmd = "{0} -c -E  'ping'".format("ovirt-shell")
+        cmd = f"ovirt-shell -c -E  'ping'"
         ret, output = self.ssh.runcmd(cmd)
-        if ret == 0 and "success" in output:
-            logger.info("Succeeded to config rhevm({0}) shell".format(self.server))
+        if not ret and "success" in output:
+            logger.info(f"Succeeded to config rhevm({self.server}) shell")
         else:
-            raise FailException("Failed to config rhevm({0}) shell".format(self.server))
+            raise FailException(f"Failed to config rhevm({self.server}) shell")
 
     def info(self):
         """
@@ -41,7 +48,7 @@ class RHVMCLI:
         """
         cmd = "ovirt-shell -c -E 'list hosts' | grep '^name' | awk -F ':' '{print $2}'"
         ret, output = self.ssh.runcmd(cmd)
-        if ret == 0 and output is not None and output != "":
+        if not ret and output is not None and output != "":
             hosts = output.strip().split('\n')
         else:
             hosts = list()
