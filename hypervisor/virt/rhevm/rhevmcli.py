@@ -20,7 +20,7 @@ class RHVMCLI:
         self.ssh = SSHConnect(self.server, user=self.ssh_user, pwd=self.ssh_pwd)
 
     def rhevm_shell_config(self, admin_server, admin_user, admin_passwd):
-        api_url = "{0}/api".format(admin_server)
+        api_url = f"{admin_server}/api"
         ca_file = "/etc/pki/ovirt-engine/ca.pem"
         options = "insecure = False\n" \
                   "no_paging = False\n" \
@@ -31,7 +31,8 @@ class RHVMCLI:
             f"username = {admin_user}\n" \
             f"password = {admin_passwd}\n" \
             f"ca_file = {ca_file}\n" \
-            f"url = {api_url}\n{options}' > {rhevm_shellrc}"
+            f"url = {api_url}\n" \
+            f"{options}' > {rhevm_shellrc}"
         self.ssh.runcmd(cmd)
         self.ssh.runcmd("ovirt-aaa-jdbc-tool user unlock admin")
         cmd = f"ovirt-shell -c -E  'ping'"
