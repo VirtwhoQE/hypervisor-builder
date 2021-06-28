@@ -20,6 +20,13 @@ class RHVMCLI:
         self.ssh = SSHConnect(self.server, user=self.ssh_user, pwd=self.ssh_pwd)
 
     def rhevm_shell_config(self, admin_server, admin_user, admin_passwd):
+        """
+        config the rhevm shell, connect to the rhevm server
+        :param admin_server: ip for the server
+        :param admin_user: username for the account
+        :param admin_passwd: password for the account
+        :return:
+        """
         api_url = f"{admin_server}/api"
         ca_file = "/etc/pki/ovirt-engine/ca.pem"
         options = "insecure = False\n" \
