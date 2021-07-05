@@ -88,3 +88,45 @@ class RHEVMCLI:
             hosts = list()
         logger.info(f"Get RHEVM Host: {hosts}")
         return hosts
+
+    def guest_search(self, guest_name):
+        """
+        Search the specific guest, return the expected attributes
+        :param guest_name: name for the specific guest
+        :param uuid_info: if you need the uuid_info: guest_uuid, esx_uuid, esx_hwuuid
+        :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
+                 guest_state: guest_poweron:1, guest_poweroff:0, guest_Suspended:2
+                 esx_state: host_poweron:1, host_poweroff:0
+        """
+        host_id = self.get_rhevm_info("vm", guest_name, 'host-id')
+        cluster_id = self.get_rhevm_info("vm", guest_name, 'cluster-id')
+        guest_msgs = {
+            'guest_name': guest_name,
+            'guest_ip': '',
+            'guest_uuid': self.get_rhevm_info("vm", guest_name, 'id'),
+            'guest_state': self.get_rhevm_info("vm", guest_name, 'status-state'),
+            'vdsm_uuid': host_id,
+            'vdsm_hwuuid': self.get_rhevm_info("host", host_id, 'hardware_information-uuid'),
+            'vdsm_hostname': self.get_rhevm_info("host", host_id, 'name'),
+            'vdsm_version': self.get_rhevm_info("host", host_id, 'version-full_version'),
+            'vdsm_cpu': self.get_rhevm_info("host", host_id, 'cpu-topology-sockets'),
+            'vdsm_cluster': self.get_rhevm_info("cluster", cluster_id, 'name'),
+        }
+        return guest_msgs
+
+    def get_rhevm_info(self, object_type, object_id, value):
+        """
+        Get the info frmo rhevm
+        :param object_type: The type of object to retrieve, such as vm, host, cluster and so on.
+        :param object_id:  <id|name> The object identifier or the object identifier
+        :param value: the value you want to get from the result
+        :return: the value you want to get
+        """
+        cmd = f"ovirt-shell -c -E 'show {object_type} {object_id}' |grep '^{value}'"
+        ret, output = self.ssh.runcmd(cmd)
+        if not ret and value in output:
+            result = output.strip().split(':')[1].strip()
+            logger.info(f"Succeeded to get rhevm {object_type} ({object_id}) {value}: {result}")
+            return result
+        else:
+            logger.info(f"Failed to get rhevm {object_type} ({object_id}) {value}")
