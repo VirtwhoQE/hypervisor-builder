@@ -89,20 +89,20 @@ class RHEVMCLI:
         logger.info(f"Get RHEVM Host: {hosts}")
         return hosts
 
-    def guest_search(self, guest_name):
+    def guest_search(self, guest_name, host_ip, host_user, host_pwd):
         """
         Search the specific guest, return the expected attributes
         :param guest_name: name for the specific guest
-        :param uuid_info: if you need the uuid_info: guest_uuid, esx_uuid, esx_hwuuid
+        :param host_ip:
+        :param host_user:
+        :param host_pwd:
         :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
-                 guest_state: guest_poweron:1, guest_poweroff:0, guest_Suspended:2
-                 esx_state: host_poweron:1, host_poweroff:0
         """
         host_id = self.get_rhevm_info("vm", guest_name, 'host-id')
         cluster_id = self.get_rhevm_info("vm", guest_name, 'cluster-id')
         guest_msgs = {
             'guest_name': guest_name,
-            'guest_ip': '',
+            'guest_ip': self.get_guest_ip_by_mac(guest_name, host_ip, host_user, host_pwd),
             'guest_uuid': self.get_rhevm_info("vm", guest_name, 'id'),
             'guest_state': self.get_rhevm_info("vm", guest_name, 'status-state'),
             'vdsm_uuid': host_id,
@@ -116,7 +116,7 @@ class RHEVMCLI:
 
     def get_rhevm_info(self, object_type, object_id, value):
         """
-        Get the info frmo rhevm
+        Get the info from RHEVM
         :param object_type: The type of object to retrieve, such as vm, host, cluster and so on.
         :param object_id:  <id|name> The object identifier or the object identifier
         :param value: the value you want to get from the result
@@ -130,3 +130,36 @@ class RHEVMCLI:
             return result
         else:
             logger.info(f"Failed to get rhevm {object_type} ({object_id}) {value}")
+
+    def get_guest_ip_by_mac(self, guest_name, host_ip, host_user, host_pwd):
+        gateway = self.get_gateway(host_ip, host_user, host_pwd)
+        guest_mac = self.get_guest_mac(guest_name)
+        option = "grep 'Nmap scan report for' | grep -Eo '([0-9]{1,3}[\.]){3}[0-9]{1,3}'| tail -1"
+        cmd = f"nmap -sP -n {gateway} | grep -i -B 2 {guest_mac} | {option}"
+        ret, output = SSHConnect(host_ip, host_user, host_pwd).runcmd(cmd)
+        if not ret and output is not None and output is not "":
+            guest_ip = output.strip()
+            logger.info(f"Succeeded to get rhevm guest ip ({guest_ip})")
+            return output.strip()
+        else:
+            logger.info(f"Failed to get rhevm guest ip")
+
+    def get_gateway(self, host, host_user, host_pwd):
+        cmd = f"ip route | grep {host}"
+        ret, output = SSHConnect(host, host_user, host_pwd).runcmd(cmd)
+        if not ret and output is not None and output is not "":
+            output = output.strip().split(" ")
+            if len(output) > 0:
+                gateway = output[0]
+                return gateway
+        raise FailException(f"Failed to get gateway({host})")
+
+    def get_guest_mac(self, guest_name):
+        cmd = f"ovirt-shell -c -E list nics --parent-vm-name {guest_name} --show-all | grep  '^mac-address'"
+        ret, output = self.ssh.runcmd(cmd)
+        if not ret and "mac-address" in output:
+            mac_addr = output.strip().split(': ')[1].strip()
+            logger.info(f"rhevm({self.server}) guest mac is: {mac_addr}")
+            return mac_addr
+        else:
+            logger.info(f"Failed to check rhevm({self.server}) guest mac")
