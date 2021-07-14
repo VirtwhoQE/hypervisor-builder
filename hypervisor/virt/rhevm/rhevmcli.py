@@ -20,10 +20,10 @@ class RHEVMCLI:
         self.ssh_user = ssh_user
         self.ssh_pwd = ssh_pwd
         self.ssh = SSHConnect(self.server, user=self.ssh_user, pwd=self.ssh_pwd)
-        if not self.rhevm_shell_connection():
-            self.rhevm_shell_config(*admin_option)
+        if not self.shell_connection():
+            self.shell_config(*admin_option)
 
-    def rhevm_url(self):
+    def url(self):
         """
         Get the URL to the Red Hat Virtualization Manager's REST API.
         This takes the form of https://[server]/ovirt-engine/api.
@@ -36,7 +36,7 @@ class RHEVMCLI:
         else:
             raise FailException(f"Failed to get url for RHEVM {self.server}")
 
-    def rhevm_shell_connection(self):
+    def shell_connection(self):
         """
         Check if the oVirt manager could be reached.
         :return:
@@ -50,7 +50,7 @@ class RHEVMCLI:
             logger.info(f"Failed to connect RHEVM({self.server}) shell")
             return False
 
-    def rhevm_shell_config(self, admin_user, admin_pwd):
+    def shell_config(self, admin_user, admin_pwd):
         """
         The URL, user name, certificate authority file, and password for connecting to the RHEVM
         can be configured in the .ovirtshellrc file. Config the RHEVM shell.
@@ -59,7 +59,7 @@ class RHEVMCLI:
         :param admin_pwd: The password for the user attempting access to the RHEVM.
         :return:
         """
-        api_url = f"{self.rhevm_url()}/api"
+        api_url = f"{self.url()}/api"
         ca_file = "/etc/pki/ovirt-engine/ca.pem"
         options = "insecure = False\n" \
                   "no_paging = False\n" \
@@ -93,9 +93,9 @@ class RHEVMCLI:
         """
         Search the specific guest, return the expected attributes
         :param guest_name: name for the specific guest
-        :param host_ip:
-        :param host_user:
-        :param host_pwd:
+        :param host_ip: the ip for the RHEVM host
+        :param host_user: the ssh username for the RHEVM host
+        :param host_pwd: the ssh password for the RHEVM host
         :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
         """
         host_id = self.get_rhevm_info("vm", guest_name, 'host-id')
@@ -132,6 +132,14 @@ class RHEVMCLI:
             logger.info(f"Failed to get rhevm {object_type} ({object_id}) {value}")
 
     def get_guest_ip_by_mac(self, guest_name, host_ip, host_user, host_pwd):
+        """
+        Get guest ip by mac
+        :param guest_name: name for the specific guest
+        :param host_ip: the ip for the RHEVM host
+        :param host_user: the ssh username for the RHEVM host
+        :param host_pwd: the ssh password for the RHEVM host
+        :return:
+        """
         gateway = self.get_gateway(host_ip, host_user, host_pwd)
         guest_mac = self.get_guest_mac(guest_name)
         option = "grep 'Nmap scan report for' | grep -Eo '([0-9]{1,3}[\.]){3}[0-9]{1,3}'| tail -1"
@@ -144,18 +152,30 @@ class RHEVMCLI:
         else:
             logger.info(f"Failed to get rhevm guest ip")
 
-    def get_gateway(self, host, host_user, host_pwd):
-        cmd = f"ip route | grep {host}"
-        ret, output = SSHConnect(host, host_user, host_pwd).runcmd(cmd)
+    def get_gateway(self, host_ip, host_user, host_pwd):
+        """
+        Get the gateway by ip route command
+        :param host_ip: the ip for the RHEVM host
+        :param host_user: the ssh username for the RHEVM host
+        :param host_pwd: the ssh password for the RHEVM host
+        :return: the gateway for host
+        """
+        cmd = f"ip route | grep {host_ip}"
+        ret, output = SSHConnect(host_ip, host_user, host_pwd).runcmd(cmd)
         if not ret and output is not None and output is not "":
             output = output.strip().split(" ")
             if len(output) > 0:
                 gateway = output[0]
                 return gateway
-        raise FailException(f"Failed to get gateway({host})")
+        raise FailException(f"Failed to get gateway({host_ip})")
 
     def get_guest_mac(self, guest_name):
-        cmd = f"ovirt-shell -c -E list nics --parent-vm-name {guest_name} --show-all | grep  '^mac-address'"
+        """
+        Get the mac address for the guest
+        :param guest_name: name for the specific guest
+        :return: the mac address for the guest
+        """
+        cmd = f"ovirt-shell -c -E 'list nics --parent-vm-name {guest_name} --show-all' | grep  '^mac-address'"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and "mac-address" in output:
             mac_addr = output.strip().split(': ')[1].strip()
