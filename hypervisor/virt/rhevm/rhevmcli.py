@@ -1,6 +1,3 @@
-import json
-import re
-
 from hypervisor import FailException
 from hypervisor import logger
 from hypervisor.ssh import SSHConnect
@@ -102,7 +99,7 @@ class RHEVMCLI:
         cluster_id = self.get_rhevm_info("vm", guest_name, 'cluster-id')
         guest_msgs = {
             'guest_name': guest_name,
-            'guest_ip': self.get_guest_ip_by_mac(guest_name, host_ip, host_user, host_pwd),
+            'guest_ip': self.get_guest_ip(guest_name, host_ip, host_user, host_pwd),
             'guest_uuid': self.get_rhevm_info("vm", guest_name, 'id'),
             'guest_state': self.get_rhevm_info("vm", guest_name, 'status-state'),
             'vdsm_uuid': host_id,
@@ -130,8 +127,9 @@ class RHEVMCLI:
             return result
         else:
             logger.info(f"Failed to get rhevm {object_type} ({object_id}) {value}")
+            return None
 
-    def get_guest_ip_by_mac(self, guest_name, host_ip, host_user, host_pwd):
+    def get_guest_ip(self, guest_name, host_ip, host_user, host_pwd):
         """
         Get guest ip by mac
         :param guest_name: name for the specific guest
@@ -183,3 +181,4 @@ class RHEVMCLI:
             return mac_addr
         else:
             logger.info(f"Failed to check rhevm({self.server}) guest mac")
+            return None
