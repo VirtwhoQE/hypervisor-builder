@@ -294,6 +294,9 @@ class RHEVMCLI:
     def guest_add(self, guest_name, template, cluster, disk, host_name=None):
         """
         Create a new virtual machine.
+        Note: You should prepare a rhevm template at first.(Please refer to
+        'https://access.redhat.com/documentation/en-us/red_hat_virtualization/4.1/html/
+        virtual_machine_management_guide/creating_a_template_from_an_existing_virtual_machine')
         :param guest_name: the name for the new virtual machine
         :param template: the name of the template
         :param cluster: the name of the cluster
@@ -359,7 +362,6 @@ class RHEVMCLI:
         :param guest_name: the virtual machines you want to power on.
         :param host_name: the name of the rhevm host
         :return: power on successfully, return True, else, return False.
-        :param guest_name:
 
         """
         if self.get_rhevm_info("vm", guest_name, 'status-state') == "up":
