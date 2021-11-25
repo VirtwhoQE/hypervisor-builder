@@ -1,5 +1,6 @@
 import json
 import time
+
 from . import ahv_constants
 from hypervisor import logger
 from hypervisor import FailException
@@ -15,11 +16,11 @@ class AHVApi(object):
                  version=ahv_constants.VERSION_2, **kwargs):
         """
         Args:
-            logger (Log): Logger.
-            url (str): Rest server url.
+            server (str) : the ip for the ahv server
             username (str): Username.
             password (str): Password for rest client.
             port (int): Port number for ssp.
+            version (str): Interface version.
             kwargs(dict): Accepts following arguments:
                 timeout(optional, int): Max seconds to wait before HTTP connection
                 times-out. Default 30 seconds.
@@ -33,7 +34,8 @@ class AHVApi(object):
         self._retries = kwargs.get('retries', 5)
         self._retry_interval = kwargs.get('retry_interval', 30)
         self._version = version
-        self._url = ahv_constants.SERVER_BASE_URIL % (server, port, self._version)
+        self._url = ahv_constants.SERVER_BASE_URIL.format(
+            server=server, port=port, version=self._version)
         self._user = username
         self._password = password
         self._port = port
@@ -309,15 +311,23 @@ class AHVApi(object):
                     )
         return host_name_list
 
-    def get_vm_by_name(self, guest_name):
+    def get_vm_by_name(self, guest_name, include_vm_disk_config=None, include_vm_nic_config=None):
         """
         Returns vm information
-        :param guest_name: Vm name
-        :return: Vm info
+        Args:
+            guest_name (string) : Vm name
+            include_vm_disk_config (bool) : Whether to include Virtual Machine disk information
+            include_vm_nic_config (bool) : Whether to include network information
+        Returns:
+            Vm info (dict)
         """
         (url, cmd_method) = self.get_diff_ver_url_and_method(
             cmd_key='list_vms', intf_version=self._version)
         url = f'{url}/?name={guest_name}'
+        if include_vm_nic_config is not None:
+            url += f'&include_vm_nic_config={include_vm_nic_config}'
+        if include_vm_disk_config is not None:
+            url += f'&include_vm_disk_config={include_vm_disk_config}'
         res = self.make_rest_call(method=cmd_method, uri=url)
         if res:
             data = res.json()
@@ -351,14 +361,14 @@ class AHVApi(object):
 
     def get_vm(self, uuid):
         """
-        Returns vm information
+        Get details of a specific Virtual Machines.
         Args:
             uuid (str): Vm uuid.
         Return:
             data (dict): Vm information.
         """
         (url, cmd_method) = self.get_common_ver_url_and_method(cmd_key='get_vm')
-        url = f'{url}/{uuid}'
+        url = url.format(uuid=uuid)
         res = self.make_rest_call(method=cmd_method, uri=url)
         if res:
             data = res.json()
@@ -374,7 +384,7 @@ class AHVApi(object):
             data (dict): Host information.
         """
         (url, cmd_method) = self.get_common_ver_url_and_method(cmd_key='get_host')
-        url = f'{url}/{uuid}'
+        url = url.format(uuid=uuid)
         res = self.make_rest_call(method=cmd_method, uri=url)
         if res:
             data = res.json()
@@ -407,26 +417,138 @@ class AHVApi(object):
     def guest_search(self, guest_name):
         """
         Search the specific guest, return the expected attributes
-        :param guest_name: name for the specific guest
-        :return: guest attributes, include guest_name, guest_ip, guest_uuid, guest_state,
-        uuid, hostname, version, cpu and cluster.
+        Args:
+            guest_name (string) : name for the specific guest
+        Returns:
+            Vm info (dict): guest attributes, include guest_name, guest_uuid, guest_state,
+            uuid, hostname, version, cpu and cluster.
         """
         guest_msgs = {}
-        guest_vm = self.get_vm_by_name(guest_name)
+        guest_vm = self.get_vm_by_name(guest_name, include_vm_nic_config=True)
         if len(guest_vm) > 0:
             for vm in guest_vm:
                 guest_msgs = {
                     'guest_name': vm['name'],
                     'guest_uuid': vm['uuid'],
-                    'guest_state': vm['power_state']
+                    'guest_state': vm['power_state'],
                 }
+                if 'vm_nics' in vm:
+                    for vm_nic in vm['vm_nics']:
+                        guest_msgs['guest_ip'] = vm_nic['ip_address']
                 host_uuid = self.get_vm_host_uuid_from_vm(vm)
-                host = self.get_host(host_uuid)
-                if host:
-                    guest_msgs['uuid'] = host['uuid']
-                    guest_msgs['hostname'] = host['name']
-                    guest_msgs['version'] = host['hypervisor_full_name']
-                    guest_msgs['cpu'] = host['num_cpu_sockets']
-                    cluster_uuid = host['cluster_uuid']
-                    guest_msgs['cluster'] = self.get_host_cluster_name(cluster_uuid)
+                if host_uuid:
+                    host = self.get_host(host_uuid)
+                    if host:
+                        guest_msgs['uuid'] = host['uuid']
+                        guest_msgs['hostname'] = host['name']
+                        guest_msgs['version'] = host['hypervisor_full_name']
+                        guest_msgs['cpu'] = host['num_cpu_sockets']
+                        cluster_uuid = host['cluster_uuid']
+                        guest_msgs['cluster'] = self.get_host_cluster_name(cluster_uuid)
         return guest_msgs
+
+    def guest_set_power_state(self, guest_name, state):
+        """
+        Set power state of a Virtual Machine.
+        The UUID of this task object is returned as the response of this operation.
+        This task can be monitored by using the /tasks/poll API.
+        Args:
+            guest_name (str): Vm name
+            state (string): The desired power state transition, should be:
+            ['ON', 'OFF', 'POWERCYCLE', 'RESET', 'PAUSE', 'SUSPEND',
+            'RESUME', 'SAVE', 'ACPI_SHUTDOWN', 'ACPI_REBOOT']
+        Return:
+            data (dict): Vm information.
+        """
+        guest = self.get_vm_by_name(guest_name)
+        if len(guest) == 1:
+            uuid = guest[0]['uuid']
+        (url, cmd_method) = self.get_common_ver_url_and_method(cmd_key='vm_set_power_state')
+        url = url.format(uuid=uuid)
+        body = {"transition": f"{state}"}
+        logger.info(f"Set the power state '{state}' for the VM {guest_name}")
+        res = self.make_rest_call(method=cmd_method, uri=url, json=body)
+        if res:
+            data = self._format_response(res.json())
+            result = self.poll_task(data['task_uuid'])
+            if 'completed_tasks_info' in result:
+                result = result['completed_tasks_info']
+                for task in result:
+                    task_status = ''
+                    if 'progress_status' in task:
+                        if task['progress_status'] in ahv_constants.TASK_COMPLETE_MSG:
+                            task_status = True
+                        elif task['progress_status'] == 'Failed':
+                            task_status = False
+                            if 'meta_response' in task:
+                                logger.error(task['meta_response']['error_detail'])
+                        return task_status
+        return False
+
+    def guest_start(self, guest_name):
+        """
+        Power on virtual machines.
+        :param guest_name: the virtual machines you want to power on.
+        :return: the status of the action
+        """
+        return self.guest_set_power_state(guest_name, 'ON')
+
+    def guest_stop(self, guest_name):
+        """
+        Power off virtual machines.
+        :param guest_name: the virtual machines you want to power off.
+        :return: the status of the action
+        """
+        return self.guest_set_power_state(guest_name, 'OFF')
+
+    def guest_suspend(self, guest_name):
+        """
+        Suspend virtual machines.
+        :param guest_name: the virtual machines you want to suspend.
+        :return: the status of the action
+        """
+        return self.guest_set_power_state(guest_name, 'SUSPEND')
+
+    def guest_resume(self, guest_name):
+        """
+        Resume virtual machines
+        :param guest_name: the virtual machines you want to resume.
+        :return: the status of the action
+        """
+        return self.guest_set_power_state(guest_name, 'RESUME')
+
+    def poll_task(self, task_uuid, timeout_interval=60):
+        """
+        Poll a task to check if its ready.
+        :param task_uuid: The UUID of task to be polled for completion.
+        :param timeout_interval: The maximum amount of time to wait, in seconds,
+        before the poll request times out.
+        :return: completed_tasks_info
+        """
+        (url, cmd_method) = self.get_common_ver_url_and_method(cmd_key='poll_task')
+        body = {"completed_tasks": [f'{task_uuid}'], "timeout_interval": f'{timeout_interval}'}
+        res = self.make_rest_call(method=cmd_method, uri=url, json=body)
+        if res:
+            data = res.json()
+            return self._format_response(data)
+        return None
+
+    def guest_del(self, guest_name):
+        """
+        Delete a Virtual Machine.
+        The UUID of this task object is returned as the response of this operation.
+        This task can be monitored by using the /tasks/poll API.
+        :param guest_name: the virtual machines you want to delete.
+        :return:
+        """
+        pass
+
+    def guest_add(self, guest_name):
+        """
+        Create a Virtual Machine with specified configuration.
+        The UUID of this task object is returned as the response of this operation.
+        This task can be monitored by using the /tasks/poll API.
+        :param guest_name:
+        :return:
+        """
+        pass
