@@ -195,16 +195,26 @@ class KubevirtApi:
             guest_msgs.update(self.get_host_info(guest_msgs['hostname']))
         return guest_msgs
 
+    def guest_set_power_state(self, guest_name, state):
+        """
+        Set power state of a Virtual Machine.
+        :param guest_name: Vm name
+        :param state: The desired power state transition, should be:
+            ['start', 'stop', 'restart', 'pause', 'unpause', 'freeze', 'unfreeze']
+        :return:
+        """
+        namespace = self.get_vm_namespace(guest_name)
+        path = '/apis/subresources.kubevirt.io/' + self._kubevirt_version() + \
+               f'/namespaces/{namespace}/virtualmachines/{guest_name}/{state}'
+        return self._request(path, 'PUT')
+
     def guest_start(self, guest_name):
         """
         Power on virtual machines.
         :param guest_name: the virtual machines you want to power on.
         :return:
         """
-        namespace = self.get_vm_namespace(guest_name)
-        path = '/apis/subresources.kubevirt.io/' + self._kubevirt_version() + \
-               f'/namespaces/{namespace}/virtualmachines/{guest_name}/start'
-        return self._request(path, 'PUT')
+        return self.guest_set_power_state(guest_name, 'start')
 
     def guest_stop(self, guest_name):
         """
@@ -212,7 +222,4 @@ class KubevirtApi:
         :param guest_name: the virtual machines you want to power off.
         :return:
         """
-        namespace = self.get_vm_namespace(guest_name)
-        path = '/apis/subresources.kubevirt.io/' + self._kubevirt_version() + \
-               f'/namespaces/{namespace}/virtualmachines/{guest_name}/stop'
-        return self._request(path, 'PUT')
+        return self.guest_set_power_state(guest_name, 'stop')
