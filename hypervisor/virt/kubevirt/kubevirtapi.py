@@ -3,7 +3,6 @@ import math
 import ssl
 import urllib3
 
-
 from hypervisor import FailException
 from hypervisor import logger
 from six import PY3
@@ -13,11 +12,13 @@ _TIMEOUT = 60
 
 
 class KubevirtApi:
-    """Kubevirt REST Api interface class"""
+    """Kubevirt REST Api interface class following the document:
+    http://kubevirt.io/api-reference/v0.44.3/operations.html"""
     def __init__(self, endpoint, token, internal_debug=None):
         """
         :param endpoint: endpoint for the kubevirt server
         :param token: token for the kubevirt server
+        :param internal_debug: detail log of the rest calls.
         """
         self._pool_manager = urllib3.PoolManager(
             num_pools=4,
@@ -36,30 +37,28 @@ class KubevirtApi:
         versions = self._request('/apis/kubevirt.io')
         return versions['preferredVersion']['version']
 
-    def _request(self, path):
+    def _request(self, path, method='GET', field=None):
         """
-        Send a get request to the server.
+        Send a request to the server.
         :param path: path for the url
         :return: return data for the result
         """
         header_params = {}
-        header_params['Accept'] = 'application/json'
-        header_params['Content-Type'] = 'application/json'
         header_params['Authorization'] = self.token
         url = self.endpoint + path
 
         try:
             timeout = Timeout(connect=_TIMEOUT, read=_TIMEOUT)
             r = self._pool_manager.request(
-                "GET",
+                method,
                 url,
-                fields=None,
+                fields=field,
                 preload_content=True,
                 headers=header_params,
                 timeout=timeout
             )
             if self.internal_debug:
-                logger.debug(f'GET method The request url sent: {url}')
+                logger.debug(f'{method} method The request url sent: {url}')
                 logger.debug(f'Response status: {r.status}')
 
         except urllib3.exceptions.SSLError as e:
@@ -73,8 +72,8 @@ class KubevirtApi:
         if self.internal_debug:
             logger.debug(f'Response: {data}')
 
-        if not 200 <= r.status <= 299:
-            raise FailException("Unknown Error")
+        if not 200 <= r.status <= 299 and not r.status == 202:
+            raise FailException(f"Error: {r.data}")
 
         try:
             data = json.loads(data)
@@ -89,12 +88,23 @@ class KubevirtApi:
         """
         return self._request('/api/v1/nodes')
 
+    def get_vminst(self):
+        """
+        Returns the params for the virtual manager instances by
+        GET /apis/kubevirt.io/v1/virtualmachineinstances
+        :return: the params for the virtual manager instances
+        """
+        path = '/apis/kubevirt.io/' + self._kubevirt_version() + '/virtualmachineinstances'
+        return self._request(path)
+
     def get_vms(self):
         """
-        Returns the params for the virtual manager.
+        Returns the params for the virtual managers by
+        GET /apis/kubevirt.io/v1/virtualmachines
         :return:
         """
-        return self._request('/apis/kubevirt.io/' + self._kubevirt_version() + '/virtualmachineinstances')
+        path = '/apis/kubevirt.io/' + self._kubevirt_version() + '/virtualmachines'
+        return self._request(path)
 
     def get_nodes_list(self):
         """
@@ -145,15 +155,28 @@ class KubevirtApi:
         :return: the guest messages for the virtual manger, include guest uuid, state,
         nodename, etc.
         """
-        vms = self.get_vms()
         guest_info = {}
-        for vm in vms['items']:
-            if vm['metadata']['name'] == guest_name:
-                guest_info['guest_uuid'] = vm['spec']['domain']['firmware']['uuid']
-                guest_info['hostname'] = vm['status']['nodeName']
-                guest_info['guest_state'] = vm['status']['phase']
+        vms_inst = self.get_vminst()
+        for vm_inst in vms_inst['items']:
+            if vm_inst['metadata']['name'] == guest_name:
+                guest_info['guest_uuid'] = vm_inst['spec']['domain']['firmware']['uuid']
+                guest_info['hostname'] = vm_inst['status']['nodeName']
+                guest_info['guest_state'] = vm_inst['status']['phase']
         logger.debug(f"vm info: {guest_info}")
         return guest_info
+
+    def get_vm_namespace(self, guest_name):
+        """
+        Get the namespace for the specific vm by GET apis/kubevirt.io/v1/virtualmachines
+        :param guest_name:
+        :return:
+        """
+        namespace = ''
+        vms = self.get_vms()
+        for vm in vms['items']:
+            if vm['metadata']['name'] == guest_name:
+                namespace = vm['metadata']['namespace']
+        return namespace
 
     def guest_search(self, guest_name, guest_port):
         """
@@ -167,6 +190,36 @@ class KubevirtApi:
         """
         guest_msgs = {}
         guest_msgs.update(self.get_vm_info(guest_name))
-        guest_msgs['guest_ip'] = f"{guest_msgs['hostname']}:{guest_port}"
-        guest_msgs.update(self.get_host_info(guest_msgs['hostname']))
+        if 'hostname' in guest_msgs:
+            guest_msgs['guest_ip'] = f"{guest_msgs['hostname']}:{guest_port}"
+            guest_msgs.update(self.get_host_info(guest_msgs['hostname']))
         return guest_msgs
+
+    def guest_set_power_state(self, guest_name, state):
+        """
+        Set power state of a Virtual Machine.
+        :param guest_name: Vm name
+        :param state: The desired power state transition, should be:
+            ['start', 'stop', 'restart', 'pause', 'unpause', 'freeze', 'unfreeze']
+        :return:
+        """
+        namespace = self.get_vm_namespace(guest_name)
+        path = '/apis/subresources.kubevirt.io/' + self._kubevirt_version() + \
+               f'/namespaces/{namespace}/virtualmachines/{guest_name}/{state}'
+        return self._request(path, 'PUT')
+
+    def guest_start(self, guest_name):
+        """
+        Power on virtual machines.
+        :param guest_name: the virtual machines you want to power on.
+        :return:
+        """
+        return self.guest_set_power_state(guest_name, 'start')
+
+    def guest_stop(self, guest_name):
+        """
+        Power off virtual machines.
+        :param guest_name: the virtual machines you want to power off.
+        :return:
+        """
+        return self.guest_set_power_state(guest_name, 'stop')
