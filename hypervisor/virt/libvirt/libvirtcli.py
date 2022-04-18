@@ -105,8 +105,10 @@ class LibvirtCLI:
         guest_mac = self.get_guest_mac(guest_name)
         option = "grep 'Nmap scan report for' | grep -Eo '([0-9]{1,3}[\.]){3}[0-9]{1,3}'| tail -1"
         cmd = f"nmap -sP -n {gateway} | grep -i -B 2 {guest_mac} | {option}"
-        guest_ip = self.ssh.runcmd(cmd)
-        if guest_ip is not False and guest_ip is not None and guest_ip != "":
+        ret, output = self.ssh.runcmd(cmd)
+        if not ret and output is not None and output is not "":
+            guest_ip = output.strip()
+            logger.info(f"Succeeded to get libvirt guest ip ({guest_ip})")
             return guest_ip
         else:
             logger.info(f"Failed to get libvirt guest ip")
