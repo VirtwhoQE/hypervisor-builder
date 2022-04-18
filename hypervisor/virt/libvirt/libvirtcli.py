@@ -34,6 +34,52 @@ class LibvirtCLI:
         else:
             raise FailException("Failed to check libvirt host({0}) uuid".format(self.server))
 
+    def host_version(self):
+        """
+        Get version for libvirt host
+        :return: version for libvirt host
+        """
+        cmd = "virsh version |grep 'Running hypervisor'"
+        ret, output = self.ssh.runcmd(cmd)
+        if not ret and "QEMU" in output:
+            version = (output.split("QEMU")[-1].strip())
+            logger.info("Succeeded to get libvirt host({0}) version is: {1}".format(self.server, version))
+            return version
+        else:
+            raise FailException("Failed to get libvirt host({0}) version".format(self.server))
+
+    def host_cpu(self):
+        """
+        Get version for libvirt host
+        :return: version for libvirt host
+        """
+        cmd = "virsh nodeinfo  |grep 'CPU socket(s)'"
+        ret, output = self.ssh.runcmd(cmd)
+        if not ret and "CPU socket(s)" in output:
+            cpu = output.split(":")[1].strip()
+            logger.info("Succeeded to get libvirt host({0}) cpu : {1}".format(self.server, cpu))
+            return cpu
+        else:
+            raise FailException("Failed to get libvirt host({0}) cpu".format(self.server))
+
+
+    def guest_search(self, guest_name):
+        """
+        Search the specific guest, return the expected attributes
+        :param guest_name: name for the specific guest
+        :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
+        """
+        guest_msgs = {
+            'guest_name': guest_name,
+            'guest_ip': self.guest_ip(guest_name),
+            'guest_uuid': self.guest_uuid(guest_name),
+            'guest_state': self.guest_status(guest_name),
+            'uuid': self.host_uuid(),
+            'version': self.host_version(),
+            'cpu': self.host_cpu()
+        }
+        return guest_msgs
+
     def guest_exist(self, guest_name):
         """
         Check if the esx guest exists
