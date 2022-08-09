@@ -74,9 +74,9 @@ class LibvirtCLI:
             'guest_ip': self.guest_ip(guest_name),
             'guest_uuid': self.guest_uuid(guest_name),
             'guest_state': self.guest_status(guest_name),
-            'uuid': self.host_uuid(),
-            'version': self.host_version(),
-            'cpu': self.host_cpu()
+            'host_uuid': self.host_uuid(),
+            'host_version': self.host_version(),
+            'host_cpu': self.host_cpu()
         }
         return guest_msgs
 
