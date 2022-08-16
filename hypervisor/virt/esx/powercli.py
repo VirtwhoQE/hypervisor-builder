@@ -7,7 +7,7 @@ from hypervisor.ssh import SSHConnect
 
 
 class PowerCLI:
-    def __init__(self, server, admin_user, admin_passwd, ssh_user, ssh_passwd):
+    def __init__(self, server, admin_user, admin_passwd, client_server, client_user, client_passwd):
         """
         Collect vcenter information, provide Host add/delete and
         Guest add/delete/start/stop/suspend/resume functions
@@ -15,14 +15,13 @@ class PowerCLI:
         :param server: the ip for the vcenter server
         :param admin_user: the user for the vcenter server
         :param admin_passwd: the password for the vcenter server
-        :param ssh_user: the ssh user for the vcenter server
-        :param ssh_passwd: the ssh password for the center server
+        :param client_server: the windows client server to run command
+        :param client_user: the windows client user
+        :param client_passwd: the windows client password
         """
         self.server = server
         self.admin_user = admin_user
         self.admin_passwd = admin_passwd
-        self.ssh_user = ssh_user
-        self.ssh_passwd = ssh_passwd
         self.cert = (
             f'powershell Connect-VIServer '
             f'-Server {self.server} '
@@ -30,7 +29,11 @@ class PowerCLI:
             f'-User {self.admin_user} '
             f'-Password {self.admin_passwd};'
         )
-        self.ssh = SSHConnect(self.server, user=self.ssh_user, pwd=self.ssh_passwd)
+        self.ssh = SSHConnect(
+            host=client_server,
+            user=client_user,
+            pwd=client_passwd
+        )
 
     def _format(self, ret=0, stdout=None):
         """
