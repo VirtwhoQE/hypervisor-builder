@@ -201,8 +201,9 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 2:
             logger.info("Succeeded to start hyperv guest")
-        else:
-            raise FailException("Failed to start vcenter guest")
+            return True
+        logger.error("Failed to start hyperv guest")
+        return False
 
     def guest_stop(self, guest_name):
         """
@@ -214,8 +215,9 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 3:
             logger.info("Succeeded to stop hyperv guest")
-        else:
-            raise FailException("Failed to stop hyperv guest")
+            return True
+        logger.error("Failed to stop hyperv guest")
+        return False
 
     def guest_suspend(self, guest_name):
         """
@@ -227,8 +229,9 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 9:
             logger.info("Succeeded to suspend hyperv guest")
-        else:
-            raise FailException("Failed to suspend hyperv guest")
+            return True
+        logger.error("Failed to suspend hyperv guest")
+        return False
 
     def guest_resume(self, guest_name):
         """
@@ -240,5 +243,6 @@ class HypervCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and self.guest_search(guest_name)['guest_state'] is 2:
             logger.info("Succeeded to resume hyperv guest")
-        else:
-            raise FailException("Failed to resume hyperv guest")
+            return True
+        logger.error("Failed to resume hyperv guest")
+        return False
