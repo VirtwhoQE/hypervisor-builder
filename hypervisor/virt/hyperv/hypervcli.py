@@ -30,9 +30,21 @@ class HypervCLI:
         if ret == 0 and stdout is not None:
             return json.loads(stdout)
 
+    def guest_search(self, guest_name):
+        """
+        Search the specific guest, return the expected attributes
+        :param guest_name: name for the specific guest
+        :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
+                 guest_state: guest_poweron:2, guest_poweroff:3, guest_Suspended:9
+        """
+        guest_info = self.guest_info(guest_name)
+        host_info = self.host_info()
+        guest_data = dict(guest_info, **host_info)
+        return guest_data
+
     def host_info(self):
         """
-        Get ip, hostname, version cpu and uuid for hyper host
+        Get ip, hostname, version cpu and uuid for hyperv host
         :return: a dict
         """
         cmd = '''PowerShell ConvertTo-Json @("gwmi -namespace 'root/cimv2' Win32_ComputerSystemProduct | select *")'''
@@ -47,11 +59,10 @@ class HypervCLI:
         }
         return host_info
 
-    def guest_info(self, guest_name, uuid_info=False):
+    def guest_info(self, guest_name, guest_uuid=False, guest_ip=False):
         """
-        Search the specific guest, return the expected attributes
+        Search the specific guest, return the guest info
         :param guest_name: name for the specific guest
-        :param uuid_info: if you need the uuid_info: guest_uuid
         :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
                  guest_state: guest_poweron:2, guest_poweroff:3, guest_Suspended:9
         """
@@ -60,11 +71,12 @@ class HypervCLI:
         output = self._format(ret, output)[0]
         guest_info = {
             'guest_name': output['VMName'],
-            'guest_ip': self.guest_ip(guest_name),
-            'guest_state': output['State'],
+            'guest_state': output['State']
         }
-        if uuid_info:
+        if guest_uuid:
             guest_info['guest_uuid'] = self.guest_uuid()
+        if guest_ip:
+            guest_info['guest_ip'] = self.guest_ip(guest_name)
         return guest_info
 
     def guest_ip(self, guest_name):
