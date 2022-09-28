@@ -43,7 +43,7 @@ class PowerCLI:
         :return: the list after json.loads
         """
         stdout = re.findall(r'[[][\W\w]+[]]', stdout)[0]
-        if ret is 0 and stdout is not None:
+        if ret == 0 and stdout is not None:
             return json.loads(stdout)
 
     def info(self):
@@ -68,17 +68,17 @@ class PowerCLI:
         :param image_path: the path for the guest image which from the remote web
         :return: create successfully, return True, else, return False
         """
-        self.guest_images(host, host_ssh_user, host_ssh_pwd, guest_name, image_path)
-        data_store = self.host_search(host)["host_data_store"]
-        vmxFile = f"'[{data_store}] {guest_name}/{guest_name}.vmx'"
-        cmd = f'{self.cert} New-VM -VMFilePath {vmxFile} -VMHost {host}'
-        ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_exist(guest_name):
-            logger.info("Succeeded to add vcenter guest")
-            self.guest_start(guest_name)
-            return True
-        else:
+        if self.guest_images(host, host_ssh_user, host_ssh_pwd, guest_name, image_path):
+            data_store = self.host_search(host)["host_data_store"]
+            vmxFile = f"'[{data_store}] {guest_name}/{guest_name}.vmx'"
+            cmd = f'{self.cert} New-VM -VMFilePath {vmxFile} -VMHost {host}'
+            ret, _ = self.ssh.runcmd(cmd)
+            if not ret and self.guest_exist(guest_name):
+                logger.info("Succeeded to add vcenter guest")
+                return True
             logger.error("Failed to add vcenter guest")
+            return False
+        else:
             return False
 
     def guest_del(self, guest_name):
@@ -87,7 +87,7 @@ class PowerCLI:
         :param guest_name: the virtual machines you want to remove.
         :return: remove successfully, return True, else, return False.
         """
-        if self.guest_search(guest_name)['guest_state'] is not 1:
+        if self.guest_search(guest_name)['guest_state'] != 1:
             self.guest_stop(guest_name)
         cmd = f'{self.cert} Remove-VM -VM {guest_name} -DeletePermanently -Confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
@@ -95,7 +95,7 @@ class PowerCLI:
             logger.info("Succeeded to delete vcenter guest")
             return True
         else:
-            logger.error("Succeeded to delete vcenter guest")
+            logger.error("Failed to delete vcenter guest")
             return False
 
     def guest_exist(self, guest_name):
@@ -108,8 +108,7 @@ class PowerCLI:
         ret, _ = self.ssh.runcmd(cmd)
         if ret:
             return False
-        else:
-            return True
+        return True
 
     def guest_images(self, host, host_ssh_user, host_ssh_pwd, guest_name, image_path):
         """
@@ -126,30 +125,18 @@ class PowerCLI:
             f'wget -P /vmfs/volumes/datastore* {image_path}'
         ret, output = host_ssh.runcmd(cmd)
         if ret:
-            raise FailException("Failed to download guest image")
+            logger.error("Failed to download guest image")
+            return False
         cmd = f'tar -zxvf /vmfs/volumes/datastore*/{guest_name}.tar.gz ' \
             f'-C /vmfs/volumes/datastore*/'
         ret, output = host_ssh.runcmd(cmd)
         if ret:
-            raise FailException("Failed to uncompress guest image")
+            logger.error("Failed to uncompress guest image")
+            return False
         cmd = "rm -f /vmfs/volumes/datastore*/*.tar.gz"
         host_ssh.runcmd(cmd)
-
-    def guest_resume(self, guest_name):
-        """
-        Resume virtual machines
-        :param guest_name: the virtual machines you want to resume.
-        :return: resume successfully, return True, else, return False.
-        """
-        cmd = f'{self.cert} Start-VM -VM {guest_name} -Confirm:$false'
-        ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_search(guest_name)['guest_state'] is 1:
-            logger.info("Succeeded to resume vcenter guest")
-            return True
-        else:
-            logger.info("Failed to resume vcenter guest")
-            return False
-
+        logger.info("Succeeded to download and uncompress the guest image")
+        return True
 
     def guest_search(self, guest_name, uuid_info=False):
         """
@@ -171,12 +158,12 @@ class PowerCLI:
             'guest_name': output['Name'],
             'guest_ip': guest_ip,
             'guest_state': output["PowerState"],
-            'guest_cpu': output["NumCpu"],
+            'guest_cpu': str(output["NumCpu"]),
             'esx_ip': output["VMHost"]["Name"],
             'esx_hostname': output["VMHost"]["Name"],
             'esx_version': output["VMHost"]["Version"],
             'esx_state': output["VMHost"]["PowerState"],
-            'esx_cpu': output["VMHost"]["NumCpu"],
+            'esx_cpu': str(output["VMHost"]["NumCpu"]),
             'esx_cluster': output["VMHost"]["Parent"]
         }
         if uuid_info:
@@ -193,11 +180,11 @@ class PowerCLI:
         """
         cmd = f'{self.cert} Start-VM -VM {guest_name} -Confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_search(guest_name)['guest_state'] is 1:
+        if not ret and self.guest_search(guest_name)['guest_state'] == 1:
             logger.info("Succeeded to start vcenter guest")
             return True
         else:
-            logger.info("Failed to start vcenter guest")
+            logger.error("Failed to start vcenter guest")
             return False
 
     def guest_stop(self, guest_name):
@@ -208,11 +195,11 @@ class PowerCLI:
         """
         cmd = f'{self.cert} Stop-VM -VM {guest_name} -Kill -Confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_search(guest_name)['guest_state'] is 0:
+        if not ret and self.guest_search(guest_name)['guest_state'] == 0:
             logger.info("Succeeded to stop vcenter guest")
             return True
         else:
-            logger.info("Failed to stop vcenter guest")
+            logger.error("Failed to stop vcenter guest")
             return False
 
     def guest_suspend(self, guest_name):
@@ -223,13 +210,27 @@ class PowerCLI:
         """
         cmd = f'{self.cert} Suspend-VM -VM {guest_name} -Confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_search(guest_name)['guest_state'] is 2:
+        if not ret and self.guest_search(guest_name)['guest_state'] == 2:
             logger.info("Succeeded to suspend vcenter guest")
             return True
         else:
-            logger.info("Failed to suspend vcenter guest")
+            logger.error("Failed to suspend vcenter guest")
             return False
 
+    def guest_resume(self, guest_name):
+        """
+        Resume virtual machines
+        :param guest_name: the virtual machines you want to resume.
+        :return: resume successfully, return True, else, return False.
+        """
+        cmd = f'{self.cert} Start-VM -VM {guest_name} -Confirm:$false'
+        ret, _ = self.ssh.runcmd(cmd)
+        if not ret and self.guest_search(guest_name)['guest_state'] == 1:
+            logger.info("Succeeded to resume vcenter guest")
+            return True
+        else:
+            logger.error("Failed to resume vcenter guest")
+            return False
 
     def guest_uuid(self, guest_name):
         """
@@ -254,15 +255,19 @@ class PowerCLI:
         """
         if self.host_exist(host_name):
             logger.warning('This host is already being managed by this vSphere')
-            return
+            return True
         cmd = f'{self.cert} Add-VMHost {host_name} ' \
             f'-Location {location} ' \
             f'-User {host_user} ' \
             f'-Password {host_pwd} ' \
             f'-confirm:$false'
         self.ssh.runcmd(cmd)
-        if not self.host_exist(host_name):
-            raise FailException(f'Failed to add VMHost {host_name}')
+        if self.host_exist(host_name):
+            logger.info(f'Succeeded to add VMHost {host_name}')
+            return True
+        else:
+            logger.error(f'Failed to add VMHost {host_name}')
+            return False
 
     def host_del(self, host_name):
         """
@@ -275,7 +280,11 @@ class PowerCLI:
         cmd = f'{self.cert} Remove-VMHost {host_name} -confirm:$false'
         self.ssh.runcmd(cmd)
         if self.host_exist(host_name):
-            raise FailException(f'Failed to delete esx host {host_name}')
+            logger.error(f'Failed to delete esx host {host_name}')
+            return False
+        else:
+            logger.info(f'Succeeded to delete esx host {host_name}')
+            return True
 
     def host_exist(self, host_name):
         """
@@ -285,10 +294,21 @@ class PowerCLI:
         """
         cmd = f'{self.cert} Get-VMHost -Name {host_name}'
         ret, output = self.ssh.runcmd(cmd)
-        if ret is 0:
+        if ret == 0:
             return True
-        else:
-            return False
+        return False
+
+    def host_uuid(self, host_name):
+        """
+        Get uuid for esx host
+        :param host_name: the host name for esx
+        :return: uuid for esx host
+        """
+        sysinfo = "%{(Get-View $_.Id).Hardware.SystemInfo}"
+        cmd = f'{self.cert} ConvertTo-Json @(Get-VMHost -Name {host_name} | {sysinfo})'
+        ret, output = self.ssh.runcmd(cmd)
+        output = self._format(ret, output)[0]
+        return output["Uuid"]
 
     def host_hwuuid(self, host_name):
         """
@@ -311,7 +331,11 @@ class PowerCLI:
         cmd = f'{self.cert} Restart-VMHost {host_name} -force -confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
         if ret:
-            raise FailException(f'Failed to find restart host {host_name}')
+            logger.error(f'Failed to find restart host {host_name}')
+            return False
+        else:
+            logger.info(f'Succeeded to find restart host {host_name}')
+            return True
 
     def host_search(self, host_name):
         """
@@ -345,7 +369,11 @@ class PowerCLI:
         cmd = f'{self.cert} Set-VMHost {host_name} -State {state}'
         ret, _ = self.ssh.runcmd(cmd)
         if ret:
-            raise FailException(f'Failed to set host {host_name} to {state} state')
+            logger.error(f'Failed to set host {host_name} to {state} state')
+            return False
+        else:
+            logger.info(f'Succeeded to set host {host_name} to {state} state')
+            return True
 
     def host_start(self, host_name):
         """
@@ -356,7 +384,11 @@ class PowerCLI:
         cmd = f'{self.cert} Start-VMHost {host_name} -confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
         if ret:
-            raise FailException(f'Failed to start esx host {host_name}')
+            logger.error(f'Failed to start esx host {host_name}')
+            return False
+        else:
+            logger.info(f'Succeeded to start esx host {host_name}')
+            return True
 
     def host_stop(self, host_name):
         """
@@ -365,20 +397,13 @@ class PowerCLI:
         :return:
         """
         if not self.host_exist(host_name):
-            raise FailException(f'Failed to find esx host {host_name}')
+            logger.error(f'Failed to find esx host {host_name}')
+            return False
         cmd = f'{self.cert} Stop-VMHost {host_name} -force -confirm:$false'
         ret, _ = self.ssh.runcmd(cmd)
         if ret:
-            raise FailException(f'Failed to stop host {host_name}')
-
-    def host_uuid(self, host_name):
-        """
-        Get uuid for esx host
-        :param host_name: the host name for esx
-        :return: uuid for esx host
-        """
-        sysinfo = "%{(Get-View $_.Id).Hardware.SystemInfo}"
-        cmd = f'{self.cert} ConvertTo-Json @(Get-VMHost -Name {host_name} | {sysinfo})'
-        ret, output = self.ssh.runcmd(cmd)
-        output = self._format(ret, output)[0]
-        return output["Uuid"]
+            logger.error(f'Failed to stop host {host_name}')
+            return False
+        else:
+            logger.info(f'Succeeded to stop host {host_name}')
+            return True

@@ -1,7 +1,6 @@
 import json
 import re
 
-from hypervisor import FailException
 from hypervisor import logger
 from hypervisor.ssh import SSHConnect
 
@@ -28,45 +27,57 @@ class HypervCLI:
         :return: the list after json.loads
         """
         stdout = re.findall(r'[[][\W\w]+[]]', stdout)[0]
-        if ret is 0 and stdout is not None:
+        if ret == 0 and stdout is not None:
             return json.loads(stdout)
 
-    def info(self):
-        """
-        Get the VMhost info
-        :return: the VMHosts info
-        """
-        cmd = 'PowerShell ConvertTo-Json @(Get-VMHost)'
-        ret, output = self.ssh.runcmd(cmd)
-        output = self._format(ret, output)
-        for host in output:
-            logger.info(f"Get Hyperv master: {host['Name']}")
-        return output
-
-    def guest_search(self, guest_name, uuid_info=False):
+    def guest_search(self, guest_name):
         """
         Search the specific guest, return the expected attributes
         :param guest_name: name for the specific guest
-        :param uuid_info: if you need the uuid_info: guest_uuid, hyperv_uuid
+        :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
+                 guest_state: guest_poweron:2, guest_poweroff:3, guest_Suspended:9
+        """
+        guest_info = self.guest_info(guest_name)
+        host_info = self.host_info()
+        guest_data = dict(guest_info, **host_info)
+        return guest_data
+
+    def host_info(self):
+        """
+        Get ip, hostname, version cpu and uuid for hyperv host
+        :return: a dict
+        """
+        cmd = '''PowerShell ConvertTo-Json @("gwmi -namespace 'root/cimv2' Win32_ComputerSystemProduct | select *")'''
+        ret, output = self.ssh.runcmd(cmd)
+        output = self._format(ret, output)[0]
+        host_info = {
+            'hyperv_ip': self.server,
+            'hyperv_hostname': output['PSComputerName'],
+            # 'hyperv_version': '',
+            'hyperv_cpu': str(output['__GENUS']),
+            'hyperv_uuid': output['UUID']
+        }
+        return host_info
+
+    def guest_info(self, guest_name, guest_uuid=False, guest_ip=False):
+        """
+        Search the specific guest, return the guest info
+        :param guest_name: name for the specific guest
         :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
                  guest_state: guest_poweron:2, guest_poweroff:3, guest_Suspended:9
         """
         cmd = f'PowerShell ConvertTo-Json @(Get-VM {guest_name})'
         ret, output = self.ssh.runcmd(cmd)
         output = self._format(ret, output)[0]
-        guest_msgs = {
+        guest_info = {
             'guest_name': output['VMName'],
-            'guest_ip': self.guest_ip(guest_name),
-            'guest_state': output['State'],
-            'hyperv_ip': self.server,
-            'hyperv_hostname': output['ComputerName'],
-            'hyperv_version': output['Version'],
-            'hyperv_cpu': output['CPUUsage'],
+            'guest_state': output['State']
         }
-        if uuid_info:
-            guest_msgs['guest_uuid'] = self.guest_uuid()
-            guest_msgs['hyperv_uuid'] = self.host_uuid()
-        return guest_msgs
+        if guest_uuid:
+            guest_info['guest_uuid'] = self.guest_uuid()
+        if guest_ip:
+            guest_info['guest_ip'] = self.guest_ip(guest_name)
+        return guest_info
 
     def guest_ip(self, guest_name):
         """
@@ -81,25 +92,12 @@ class HypervCLI:
     def guest_uuid(self):
         """
         Get uuid for hyperv guest
-        :param guest_name: the guest name for hyperv guest
         :return: uuid for hyperv guest
         """
         cmd = 'PowerShell (gwmi -Namespace Root\Virtualization\V2 ' \
               '-ClassName Msvm_VirtualSystemSettingData).BiosGUID'
         ret, output = self.ssh.runcmd(cmd)
-        return output
-
-    def host_uuid(self):
-        """
-        Get uuid for hyper host
-        :param host_name: the host name for hyperv
-        :return: uuid for hyperv host
-        """
-        cmd = "PowerShell ConvertTo-Json @(" \
-              "gwmi -namespace 'root/cimv2' Win32_ComputerSystemProduct | select *)"
-        ret, output = self.ssh.runcmd(cmd)
-        output = self._format(ret, output)[0]
-        return output["UUID"]
+        return output.strip()
 
     def virtual_switch(self):
         """
@@ -124,14 +122,16 @@ class HypervCLI:
         ret, output = self.ssh.runcmd(cmd)
         if not ret and guest_name in output:
             logger.info("hyperv image is exist")
+            return True
         else:
             cmd = f"PowerShell (New-Object System.Net.WebClient).DownloadFile(" \
                 f"'{image_path}', 'C:\hyperv_img\{guest_name}.vhdx')"
             ret, output = self.ssh.runcmd(cmd)
             if not ret:
                 logger.info("succeeded to download hyperv image")
-            else:
-                raise FailException("Failed to download hyperv image")
+                return True
+            logger.error("Failed to download hyperv image")
+            return False
 
     def guest_exist(self, guest_name):
         """
@@ -159,22 +159,26 @@ class HypervCLI:
         """
         if self.guest_exist(guest_name):
             logger.warning(f'Guest {guest_name} has already existed')
-            return
-        self.guest_image(guest_name, image_path)
-        switch_name = self.virtual_switch()
-        if '8.' in guest_name:
-            options = f'-MemoryStartupBytes 2GB -SwitchName {switch_name} -Generation 2'
-        else:
-            options = f'-MemoryStartupBytes 1GB -SwitchName {switch_name} -Generation 1'
-        cmd = f"PowerShell New-VM -Name {guest_name} -VHDPath \"C:\hyperv_img\{guest_name}.vhdx\" {options}"
-        ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_exist(guest_name):
-            logger.info("Succeeded to add hyperv guest")
+            return True
+        if self.guest_image(guest_name, image_path):
+            switch_name = self.virtual_switch()
             if '8.' in guest_name:
-                cmd = f"PowerShell Set-VMFirmware -VMName {guest_name} -EnableSecureBoot off"
-                self.ssh.runcmd(cmd)
+                options = f'-MemoryStartupBytes 2GB -SwitchName {switch_name} -Generation 2'
+            else:
+                options = f'-MemoryStartupBytes 1GB -SwitchName {switch_name} -Generation 1'
+            cmd = f"PowerShell New-VM -Name {guest_name} -VHDPath \"C:\hyperv_img\{guest_name}.vhdx\" {options}"
+            ret, _ = self.ssh.runcmd(cmd)
+            if not ret and self.guest_exist(guest_name):
+                logger.info("Succeeded to add hyperv guest")
+                if '8.' in guest_name:
+                    cmd = f"PowerShell Set-VMFirmware -VMName {guest_name} -EnableSecureBoot off"
+                    self.ssh.runcmd(cmd)
+                return True
+            else:
+                logger.error("Failed to add hyperv guest")
+                return False
         else:
-            raise FailException("Failed to add hyperv guest")
+            return False
 
     def guest_del(self, guest_name):
         """
@@ -182,14 +186,16 @@ class HypervCLI:
         :param guest_name: the virtual machines you want to remove.
         :return: remove successfully, return True, else, return False.
         """
-        if self.guest_search(guest_name)['guest_state'] is not 3:
+        if self.guest_info(guest_name)['guest_state'] != 3:
             self.guest_stop(guest_name)
         cmd = f'PowerShell Remove-VM {guest_name} -force'
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and not self.guest_exist(guest_name):
             logger.info("Succeeded to delete hyperv guest")
+            return True
         else:
-            raise FailException("Failed to delete hyperv guest")
+            logger.error("Failed to delete hyperv guest")
+            return False
 
     def guest_start(self, guest_name):
         """
@@ -199,10 +205,12 @@ class HypervCLI:
         """
         cmd = f'PowerShell Start-VM -Name {guest_name}'
         ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_search(guest_name)['guest_state'] is 2:
+        if not ret and self.guest_info(guest_name)['guest_state'] == 2:
             logger.info("Succeeded to start hyperv guest")
+            return True
         else:
-            raise FailException("Failed to start vcenter guest")
+            logger.error("Failed to start hyperv guest")
+            return False
 
     def guest_stop(self, guest_name):
         """
@@ -212,10 +220,12 @@ class HypervCLI:
         """
         cmd = f'PowerShell Stop-VM -Name {guest_name}'
         ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_search(guest_name)['guest_state'] is 3:
+        if not ret and self.guest_info(guest_name)['guest_state'] == 3:
             logger.info("Succeeded to stop hyperv guest")
+            return True
         else:
-            raise FailException("Failed to stop hyperv guest")
+            logger.error("Failed to stop hyperv guest")
+            return False
 
     def guest_suspend(self, guest_name):
         """
@@ -225,10 +235,12 @@ class HypervCLI:
         """
         cmd = f'PowerShell Suspend-VM -Name {guest_name}'
         ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_search(guest_name)['guest_state'] is 9:
+        if not ret and self.guest_info(guest_name)['guest_state'] == 9:
             logger.info("Succeeded to suspend hyperv guest")
+            return True
         else:
-            raise FailException("Failed to suspend hyperv guest")
+            logger.error("Failed to suspend hyperv guest")
+            return False
 
     def guest_resume(self, guest_name):
         """
@@ -238,7 +250,9 @@ class HypervCLI:
         """
         cmd = f'PowerShell Resume-VM -Name {guest_name}'
         ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.guest_search(guest_name)['guest_state'] is 2:
+        if not ret and self.guest_info(guest_name)['guest_state'] == 2:
             logger.info("Succeeded to resume hyperv guest")
+            return True
         else:
-            raise FailException("Failed to resume hyperv guest")
+            logger.error("Failed to resume hyperv guest")
+            return False
