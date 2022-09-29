@@ -163,7 +163,7 @@ class PowerCLI:
             'esx_hostname': output["VMHost"]["Name"],
             'esx_version': output["VMHost"]["Version"],
             'esx_state': output["VMHost"]["PowerState"],
-            'esx_cpu': str(output["VMHost"]["NumCpu"]),
+            'esx_cpu': str(output["NumCpu"]),
             'esx_cluster': output["VMHost"]["Parent"]
         }
         if uuid_info:
