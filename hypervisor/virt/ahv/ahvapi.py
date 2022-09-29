@@ -442,7 +442,7 @@ class AHVApi(object):
                         guest_msgs['uuid'] = host['uuid']
                         guest_msgs['hostname'] = host['name']
                         guest_msgs['version'] = host['hypervisor_full_name']
-                        guest_msgs['cpu'] = host['num_cpu_sockets']
+                        guest_msgs['cpu'] = str(host['num_cpu_sockets'])
                         cluster_uuid = host['cluster_uuid']
                         guest_msgs['cluster'] = self.get_host_cluster_name(cluster_uuid)
         return guest_msgs

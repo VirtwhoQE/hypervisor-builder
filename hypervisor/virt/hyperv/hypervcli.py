@@ -37,7 +37,7 @@ class HypervCLI:
         :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
                  guest_state: guest_poweron:2, guest_poweroff:3, guest_Suspended:9
         """
-        guest_info = self.guest_info(guest_name)
+        guest_info = self.guest_info(guest_name, guest_uuid=True, guest_ip=True)
         host_info = self.host_info()
         guest_data = dict(guest_info, **host_info)
         return guest_data
