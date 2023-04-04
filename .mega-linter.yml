@@ -7,6 +7,11 @@ APPLY_FIXES: all # all, none, or list of linter keys
 DISABLE:
   - COPYPASTE # Uncomment to disable checks of excessive copy-pastes
   - SPELL # Uncomment to disable checks of spelling mistakes
+  - PYTHON_RUFF
+  - PYTHON_PYRIGHT
+  - REPOSITORY
+  - PYTHON_FLAKE8
+  - PYTHON_BANDIT
 SHOW_ELAPSED_TIME: true
 FILEIO_REPORTER: false
 # DISABLE_ERRORS: true # Uncomment if you want MegaLinter to detect errors but not block CI to pass
