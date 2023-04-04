@@ -29,7 +29,7 @@ class RHEVMCLI:
         This takes the form of https://[server]/ovirt-engine/api.
         :return:
         """
-        ret, output = self.ssh.runcmd('hostname')
+        ret, output = self.ssh.runcmd("hostname")
         if not ret and output is not None and output is not "":
             hostname = output.strip()
             return f"https://{hostname}:443/ovirt-engine"
@@ -41,13 +41,15 @@ class RHEVMCLI:
         Generate the mac address randomly.
         :return: mac address
         """
-        mac = [ 0x06,
-                random.randint(0x00, 0x2f),
-                random.randint(0x00, 0x3f),
-                random.randint(0x00, 0x4f),
-                random.randint(0x00, 0x8f),
-                random.randint(0x00, 0xff) ]
-        return ':'.join(map(lambda x: "%02x" % x, mac))
+        mac = [
+            0x06,
+            random.randint(0x00, 0x2F),
+            random.randint(0x00, 0x3F),
+            random.randint(0x00, 0x4F),
+            random.randint(0x00, 0x8F),
+            random.randint(0x00, 0xFF),
+        ]
+        return ":".join(map(lambda x: "%02x" % x, mac))
 
     def shell_connection(self):
         """
@@ -74,17 +76,18 @@ class RHEVMCLI:
         """
         api_url = f"{self.url()}/api"
         ca_file = "/etc/pki/ovirt-engine/ca.pem"
-        options = "insecure = False\n" \
-                  "no_paging = False\n" \
-                  "filter = False\n" \
-                  "timeout = -1"
-        rhevm_shellrc = '/root/.ovirtshellrc'
-        cmd = f"echo -e '[ovirt-shell]\n" \
-            f"username = {admin_user}\n" \
-            f"password = {admin_pwd}\n" \
-            f"ca_file = {ca_file}\n" \
-            f"url = {api_url}\n" \
+        options = (
+            "insecure = False\n" "no_paging = False\n" "filter = False\n" "timeout = -1"
+        )
+        rhevm_shellrc = "/root/.ovirtshellrc"
+        cmd = (
+            f"echo -e '[ovirt-shell]\n"
+            f"username = {admin_user}\n"
+            f"password = {admin_pwd}\n"
+            f"ca_file = {ca_file}\n"
+            f"url = {api_url}\n"
             f"{options}' > {rhevm_shellrc}"
+        )
         self.ssh.runcmd(cmd)
         self.ssh.runcmd("ovirt-aaa-jdbc-tool user unlock admin")
 
@@ -96,7 +99,7 @@ class RHEVMCLI:
         cmd = "ovirt-shell -c -E 'list hosts' | grep '^name' | awk -F ':' '{print $2}'"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and output is not None and output is not "":
-            hosts = output.strip().split('\n')
+            hosts = output.strip().split("\n")
         else:
             hosts = list()
         logger.info(f"Get RHEVM Host: {hosts}")
@@ -111,19 +114,23 @@ class RHEVMCLI:
         :param host_pwd: the ssh password for the RHEVM host
         :return: guest attributes, exclude guest_name, guest_ip, guest_uuid ...
         """
-        host_id = self.get_rhevm_info("vm", guest_name, 'host-id')
-        cluster_id = self.get_rhevm_info("vm", guest_name, 'cluster-id')
+        host_id = self.get_rhevm_info("vm", guest_name, "host-id")
+        cluster_id = self.get_rhevm_info("vm", guest_name, "cluster-id")
         guest_msgs = {
-            'guest_name': guest_name,
-            'guest_ip': self.get_guest_ip(guest_name, host_ip, host_user, host_pwd),
-            'guest_uuid': self.get_rhevm_info("vm", guest_name, 'id'),
-            'guest_state': self.get_rhevm_info("vm", guest_name, 'status-state'),
-            'vdsm_uuid': host_id,
-            'vdsm_hwuuid': self.get_rhevm_info("host", host_id, 'hardware_information-uuid'),
-            'vdsm_hostname': self.get_rhevm_info("host", host_id, 'name'),
-            'vdsm_version': self.get_rhevm_info("host", host_id, 'version-full_version'),
-            'vdsm_cpu': self.get_rhevm_info("host", host_id, 'cpu-topology-sockets'),
-            'vdsm_cluster': self.get_rhevm_info("cluster", cluster_id, 'name'),
+            "guest_name": guest_name,
+            "guest_ip": self.get_guest_ip(guest_name, host_ip, host_user, host_pwd),
+            "guest_uuid": self.get_rhevm_info("vm", guest_name, "id"),
+            "guest_state": self.get_rhevm_info("vm", guest_name, "status-state"),
+            "vdsm_uuid": host_id,
+            "vdsm_hwuuid": self.get_rhevm_info(
+                "host", host_id, "hardware_information-uuid"
+            ),
+            "vdsm_hostname": self.get_rhevm_info("host", host_id, "name"),
+            "vdsm_version": self.get_rhevm_info(
+                "host", host_id, "version-full_version"
+            ),
+            "vdsm_cpu": self.get_rhevm_info("host", host_id, "cpu-topology-sockets"),
+            "vdsm_cluster": self.get_rhevm_info("cluster", cluster_id, "name"),
         }
         return guest_msgs
 
@@ -138,8 +145,10 @@ class RHEVMCLI:
         cmd = f"ovirt-shell -c -E 'show {object_type} {object_id}' |grep '^{value}'"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and value in output:
-            result = output.strip().split(':')[1].strip()
-            logger.info(f"Succeeded to get rhevm {object_type} ({object_id}) {value}: {result}")
+            result = output.strip().split(":")[1].strip()
+            logger.info(
+                f"Succeeded to get rhevm {object_type} ({object_id}) {value}: {result}"
+            )
             return result
         else:
             logger.info(f"Failed to get rhevm {object_type} ({object_id}) {value}")
@@ -192,7 +201,7 @@ class RHEVMCLI:
         cmd = f"ovirt-shell -c -E 'list nics --parent-vm-name {guest_name} --show-all' | grep  '^mac-address'"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and "mac-address" in output:
-            mac_addr = output.strip().split(': ')[1].strip()
+            mac_addr = output.strip().split(": ")[1].strip()
             logger.info(f"rhevm({self.server}) guest mac is: {mac_addr}")
             return mac_addr
         else:
@@ -209,11 +218,13 @@ class RHEVMCLI:
         cmd = f"ovirt-shell -c -E 'list disks {vm_options}' | grep '^id'"
         ret, output = self.ssh.runcmd(cmd)
         if ret == 0 and "id" in output:
-            uuid = output.strip().split(':')[1].strip()
+            uuid = output.strip().split(":")[1].strip()
             logger.info(f"rhevm({self.server}) disk uuid for guest: {uuid}")
             return uuid
         else:
-            raise FailException(f"Failed to check rhevm({self.server}) disk uuid for guest")
+            raise FailException(
+                f"Failed to check rhevm({self.server}) disk uuid for guest"
+            )
 
     def guest_disk_ready(self, guest_name, disk):
         """
@@ -235,15 +246,20 @@ class RHEVMCLI:
             if self.guest_disk_is_actived(guest_name):
                 is_actived_disk = "Yes"
             else:
-                cmd = f"ovirt-shell -c -E 'action disk {disk_uuid} activate {vm_options}'"
+                cmd = (
+                    f"ovirt-shell -c -E 'action disk {disk_uuid} activate {vm_options}'"
+                )
                 self.ssh.runcmd(cmd)
             if is_actived_disk == "Yes" and self.guest_disk_status(guest_name) == "ok":
-                logger.info(f"rhevm({self.server}) guest disk is actived and status is ok")
+                logger.info(
+                    f"rhevm({self.server}) guest disk is actived and status is ok"
+                )
                 status = "ok"
                 break
         if is_actived_disk != "Yes" or status != "ok":
             raise FailException(
-                f"Failed to create rhevm({self.server}) guest as disk can't be actived")
+                f"Failed to create rhevm({self.server}) guest as disk can't be actived"
+            )
 
     def guest_disk_status(self, guest_name):
         """
@@ -255,11 +271,13 @@ class RHEVMCLI:
         cmd = f"ovirt-shell -c -E 'list disks {vm_options} --show-all' | grep '^status-state'"
         ret, output = self.ssh.runcmd(cmd)
         if ret == 0 and "status-state" in output:
-            status = output.strip().split(':')[1].strip()
+            status = output.strip().split(":")[1].strip()
             logger.info(f"rhevm({self.server}) disk for guest status: {status}")
             return status
         else:
-            raise FailException(f"Failed to check rhevm({self.server}) guest disk status")
+            raise FailException(
+                f"Failed to check rhevm({self.server}) guest disk status"
+            )
 
     def guest_disk_is_actived(self, guest_name):
         """
@@ -285,7 +303,7 @@ class RHEVMCLI:
         cmd = f"ovirt-shell -c -E '{options}' | grep  '^name'"
         ret, output = self.ssh.runcmd(cmd)
         if ret == 0 and "name" in output:
-            nic = output.strip().split(': ')[1].strip()
+            nic = output.strip().split(": ")[1].strip()
             logger.info(f"rhevm({self.server}) guest nic is: {nic}")
             return nic
         else:
@@ -308,13 +326,15 @@ class RHEVMCLI:
             host_name = self.info()[0]
         if self.guest_exist(guest_name):
             self.guest_del(guest_name)
-        cmd = f"ovirt-shell -c -E 'add vm " \
-            f"--name {guest_name} " \
-            f"--cluster-name {cluster} " \
-            f"--template-name {template} " \
+        cmd = (
+            f"ovirt-shell -c -E 'add vm "
+            f"--name {guest_name} "
+            f"--cluster-name {cluster} "
+            f"--template-name {template} "
             f"--placement_policy-host-name {host_name}'"
+        )
         self.ssh.runcmd(cmd)
-        guest_uuid = self.get_rhevm_info("vm", guest_name, 'id')
+        guest_uuid = self.get_rhevm_info("vm", guest_name, "id")
         guest_nic = self.guest_nic(guest_name)
         guest_mac = self.random_mac()
         vm_options = f"--parent-vm-identifier {guest_uuid}"
@@ -364,15 +384,18 @@ class RHEVMCLI:
         :return: power on successfully, return True, else, return False.
 
         """
-        if self.get_rhevm_info("vm", guest_name, 'status-state') == "up":
+        if self.get_rhevm_info("vm", guest_name, "status-state") == "up":
             logger.info(f"Rhevm({self.server}) guest is in Up status")
             return True
         if not host_name:
             host_name = self.info()[0]
         cmd = f"ovirt-shell -c -E 'action vm {guest_name} start --vm-placement_policy-host-name {host_name}'"
         ret, output = self.ssh.runcmd(cmd)
-        if not ret and "ERROR" not in output and \
-                self.get_rhevm_info("vm", guest_name, 'status-state') == "up":
+        if (
+            not ret
+            and "ERROR" not in output
+            and self.get_rhevm_info("vm", guest_name, "status-state") == "up"
+        ):
             logger.info(f"Succeeded to start rhevm({self.server}) guest")
             return True
         else:
@@ -387,7 +410,7 @@ class RHEVMCLI:
         """
         cmd = f"ovirt-shell -c -E 'action vm {guest_name} stop'"
         ret, _ = self.ssh.runcmd(cmd)
-        status = self.get_rhevm_info("vm", guest_name, 'status-state')
+        status = self.get_rhevm_info("vm", guest_name, "status-state")
         if not ret and status == "down":
             logger.info(f"Succeeded to stop rhevm({self.server}) guest")
             return True
@@ -400,12 +423,15 @@ class RHEVMCLI:
         :param guest_name: the virtual machines you want to suspend.
         :return: suspend successfully, return True, else, return False.
         """
-        if self.get_rhevm_info("vm", guest_name, 'status-state') == "suspended":
+        if self.get_rhevm_info("vm", guest_name, "status-state") == "suspended":
             logger.info(f"Rhevm({self.server}) guest is in suspended status")
             return True
         cmd = f"ovirt-shell -c -E 'action vm {guest_name} suspend'"
         ret, _ = self.ssh.runcmd(cmd)
-        if not ret and self.get_rhevm_info("vm", guest_name, 'status-state') == "suspended":
+        if (
+            not ret
+            and self.get_rhevm_info("vm", guest_name, "status-state") == "suspended"
+        ):
             logger.info(f"Succeeded to suspend rhevm({self.server}) guest")
             return True
         else:
