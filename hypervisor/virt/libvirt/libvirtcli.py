@@ -176,7 +176,7 @@ class LibvirtCLI:
         :param host_pwd: the ssh password for the libvirt host
         :return: the gateway for host
         """
-        cmd = f"ip route | grep {host_ip}"
+        cmd = f"ip route | grep {host_ip} | grep /"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and output is not None and output != "":
             output = output.strip().split(" ")
