@@ -3,7 +3,7 @@ import time
 import logging
 
 
-class Logger():
+class Logger:
     """
     Usage:
         from hypervisor import log
@@ -13,7 +13,7 @@ class Logger():
         logger.error("abc")
         logger.warning("abc")
     """
- 
+
     def __init__(self, logger=None):
         """
         The log message will output to file and console.
@@ -24,16 +24,19 @@ class Logger():
         self.logger.setLevel(logging.DEBUG)
         self.logger.handlers = []
         self.log_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-            'logs')
-        if not os.path.exists(self.log_path):os.mkdir(self.log_path)
-        self.log_name = os.path.join(self.log_path, '%s.log' % time.strftime('%Y_%m_%d'))
+            os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "logs"
+        )
+        if not os.path.exists(self.log_path):
+            os.mkdir(self.log_path)
+        self.log_name = os.path.join(
+            self.log_path, "%s.log" % time.strftime("%Y_%m_%d")
+        )
         self.formatter = logging.Formatter(
-            '[%(asctime)s] - [%(filename)s] - %(levelname)s: %(message)s',
-            '%Y-%m-%d %H:%M:%S'
+            "[%(asctime)s] - [%(filename)s] - %(levelname)s: %(message)s",
+            "%Y-%m-%d %H:%M:%S",
         )
 
-        fh = logging.FileHandler(self.log_name, 'a', encoding='utf-8')
+        fh = logging.FileHandler(self.log_name, "a", encoding="utf-8")
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(self.formatter)
         self.logger.addHandler(fh)
@@ -49,9 +52,10 @@ class Logger():
     def getlog(self):
         return self.logger
 
+
 def getLogger(name=None):
     """
-    This method does the setup necessary to create 
+    This method does the setup necessary to create
     and connect the main logger instance.
     """
     return Logger(name).getlog()

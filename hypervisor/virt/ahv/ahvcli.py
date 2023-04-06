@@ -17,8 +17,8 @@ class AHVaCLI:
         :param ssh_user: the ssh user for the AHV server
         :param ssh_pwd: the ssh password for the AHV server
         """
-        self.acli = '/usr/local/nutanix/bin/acli'
-        self.ncli = '/home/nutanix/prism/cli/ncli'
+        self.acli = "/usr/local/nutanix/bin/acli"
+        self.ncli = "/home/nutanix/prism/cli/ncli"
         self.server = server
         self.ssh_user = ssh_user
         self.ssh_pwd = ssh_pwd
@@ -32,8 +32,8 @@ class AHVaCLI:
         :return: the data after json.loads
         """
         output = json.loads(stdout)
-        if output['status'] is 0:
-            return output['data']
+        if output["status"] is 0:
+            return output["data"]
 
     def set_json_ouput(self):
         """
@@ -58,9 +58,9 @@ class AHVaCLI:
         """
         ret, output = self.ssh.runcmd(f"{self.ncli} {cmd}")
         ncli_info = {}
-        for line in output.split('\n'):
+        for line in output.split("\n"):
             if not ret and value in line:
-                result = line.split(':', 1)
+                result = line.split(":", 1)
                 ncli_info[result[0].strip()] = result[1].strip()
                 logger.info(f"Succeeded to get {value}: {ncli_info[value]}")
                 return ncli_info[value]
@@ -93,8 +93,8 @@ class AHVaCLI:
         cmd = f"{self.ncli} virtualmachine list name='{guest_name}'"
         ret, output = self.ssh.runcmd(cmd)
         guest_info = {}
-        for line in output.strip().split('\n'):
-            result = line.split(':', 1)
+        for line in output.strip().split("\n"):
+            result = line.split(":", 1)
             guest_info[result[0].strip()] = result[1].strip()
         return guest_info
 
@@ -108,18 +108,22 @@ class AHVaCLI:
                 'kOn' : Power on
                 'kOff': Power off
         """
-        guest_info_acli = self.get_acli_info('vm', guest_name)
+        guest_info_acli = self.get_acli_info("vm", guest_name)
         guest_info_ncli = self.get_guest_info_ncli(guest_name)
         guest_msgs = {
-            'guest_name': guest_info_acli['config']['name'],
-            'guest_ip': guest_info_ncli['VM IP Addresses'],
-            'guest_uuid': guest_info_ncli['Uuid'],
-            'guest_state': guest_info_acli['state'],
-            'uuid': guest_info_acli['host_uuid'],
-            'hostname': guest_info_ncli['Hypervisor Host Name'],
-            'version': self.get_ncli_info(
-                f"host list id={guest_info_ncli['Hypervisor Host Id']}", 'Hypervisor Version'),
-            'cpu': self.get_acli_info('host', guest_info_ncli['Hypervisor Host Uuid'])['num_cpus'],
-            'cluster': self.get_ncli_info("cluster info", 'Cluster Name'),
+            "guest_name": guest_info_acli["config"]["name"],
+            "guest_ip": guest_info_ncli["VM IP Addresses"],
+            "guest_uuid": guest_info_ncli["Uuid"],
+            "guest_state": guest_info_acli["state"],
+            "uuid": guest_info_acli["host_uuid"],
+            "hostname": guest_info_ncli["Hypervisor Host Name"],
+            "version": self.get_ncli_info(
+                f"host list id={guest_info_ncli['Hypervisor Host Id']}",
+                "Hypervisor Version",
+            ),
+            "cpu": self.get_acli_info("host", guest_info_ncli["Hypervisor Host Uuid"])[
+                "num_cpus"
+            ],
+            "cluster": self.get_ncli_info("cluster info", "Cluster Name"),
         }
         return guest_msgs

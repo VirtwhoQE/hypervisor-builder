@@ -5,7 +5,7 @@ Hyperivosr-builder tool supports the libvirt hypervisor by virsh Commands
 Provide functions:
 - Collect libvirt information
 - Libvirt host uuid/version/cpu
-- Guest search/start/stop/suspend/resume 
+- Guest search/start/stop/suspend/resume
 
 
 ## Install Environment
