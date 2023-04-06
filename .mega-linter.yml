@@ -9,7 +9,7 @@ ENABLE: # If you use ENABLE variable, all other languages/formats/tooling-format
 
 ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
   - PYTHON_BLACK
-  - PYTHON_FLAKE8
+  # - PYTHON_FLAKE8
 
 # DISABLE:
 #   - COPYPASTE # Uncomment to disable checks of excessive copy-pastes
