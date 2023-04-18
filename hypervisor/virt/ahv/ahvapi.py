@@ -445,7 +445,7 @@ class AHVApi(object):
         guest_vm = self.get_vm_by_name(guest_name, include_vm_nic_config=True)
         if len(guest_vm) > 0:
             for vm in guest_vm:
-                if vm['name'] == guest_name:
+                if vm["name"] == guest_name:
                     guest_msgs = {
                         "guest_name": vm["name"],
                         "guest_uuid": vm["uuid"],
@@ -463,7 +463,9 @@ class AHVApi(object):
                             guest_msgs["version"] = host["hypervisor_full_name"]
                             guest_msgs["cpu"] = str(host["num_cpu_sockets"])
                             cluster_uuid = host["cluster_uuid"]
-                            guest_msgs["cluster"] = self.get_host_cluster_name(cluster_uuid)
+                            guest_msgs["cluster"] = self.get_host_cluster_name(
+                                cluster_uuid
+                            )
         return guest_msgs
 
     def guest_set_power_state(self, guest_name, state):
