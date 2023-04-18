@@ -445,24 +445,27 @@ class AHVApi(object):
         guest_vm = self.get_vm_by_name(guest_name, include_vm_nic_config=True)
         if len(guest_vm) > 0:
             for vm in guest_vm:
-                guest_msgs = {
-                    "guest_name": vm["name"],
-                    "guest_uuid": vm["uuid"],
-                    "guest_state": vm["power_state"],
-                }
-                if "vm_nics" in vm:
-                    for vm_nic in vm["vm_nics"]:
-                        guest_msgs["guest_ip"] = vm_nic["ip_address"]
-                host_uuid = self.get_vm_host_uuid_from_vm(vm)
-                if host_uuid:
-                    host = self.get_host(host_uuid)
-                    if host:
-                        guest_msgs["uuid"] = host["uuid"]
-                        guest_msgs["hostname"] = host["name"]
-                        guest_msgs["version"] = host["hypervisor_full_name"]
-                        guest_msgs["cpu"] = str(host["num_cpu_sockets"])
-                        cluster_uuid = host["cluster_uuid"]
-                        guest_msgs["cluster"] = self.get_host_cluster_name(cluster_uuid)
+                if vm["name"] == guest_name:
+                    guest_msgs = {
+                        "guest_name": vm["name"],
+                        "guest_uuid": vm["uuid"],
+                        "guest_state": vm["power_state"],
+                    }
+                    if "vm_nics" in vm:
+                        for vm_nic in vm["vm_nics"]:
+                            guest_msgs["guest_ip"] = vm_nic["ip_address"]
+                    host_uuid = self.get_vm_host_uuid_from_vm(vm)
+                    if host_uuid:
+                        host = self.get_host(host_uuid)
+                        if host:
+                            guest_msgs["uuid"] = host["uuid"]
+                            guest_msgs["hostname"] = host["name"]
+                            guest_msgs["version"] = host["hypervisor_full_name"]
+                            guest_msgs["cpu"] = str(host["num_cpu_sockets"])
+                            cluster_uuid = host["cluster_uuid"]
+                            guest_msgs["cluster"] = self.get_host_cluster_name(
+                                cluster_uuid
+                            )
         return guest_msgs
 
     def guest_set_power_state(self, guest_name, state):
