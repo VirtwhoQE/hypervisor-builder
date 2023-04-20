@@ -1,0 +1,5 @@
+FROM oxsecurity/megalinter:v6
+
+LABEL maintainer="Pinge Zhang <pinzhang@redhat.com>"
+
+RUN pip3 install paramiko==2.7.2 pytest==6.2.2
