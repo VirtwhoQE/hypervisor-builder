@@ -22,7 +22,7 @@ concurrency:
 jobs:
   build:
     name: MegaLinter
-    runs-on: quay.io/virtwho-qe/hypervisor-builder-linter:v0
+    container: quay.io/virtwho-qe/hypervisor-builder-linter:v0
     steps:
       # Git Checkout
       - name: Checkout Code
