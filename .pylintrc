@@ -1,5 +1,8 @@
-[MESSAGES CONTROL]
-disable=
-    fixme,
-    cyclic-import,
-    import-error,
+; [MESSAGES CONTROL]
+; disable=
+;     fixme,
+;     cyclic-import,
+;     import-error,
+
+[TYPECHECK]
+ignored-modules=six,urllib3,paramiko,requests,
