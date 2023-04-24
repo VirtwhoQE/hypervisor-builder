@@ -1,7 +1,6 @@
 import json
 import re
 
-from hypervisor import FailException
 from hypervisor import logger
 from hypervisor.ssh import SSHConnect
 

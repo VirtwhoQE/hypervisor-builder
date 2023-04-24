@@ -1,6 +1,5 @@
 import os
 import paramiko
-from six import BytesIO
 from hypervisor import logger
 
 
@@ -117,7 +116,7 @@ class SSHConnect:
                 remote_file = os.path.join(remote_dir, a)
                 try:
                     sftp.put(local_file, remote_file)
-                except Exception as e:
+                except Exception:
                     sftp.mkdir(os.path.split(remote_file)[0])
                     sftp.put(local_file, remote_file)
             for name in dirs:

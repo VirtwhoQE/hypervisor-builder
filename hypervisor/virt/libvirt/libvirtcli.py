@@ -1,7 +1,6 @@
 import re
 import time
 
-from hypervisor import FailException
 from hypervisor import logger
 from hypervisor.ssh import SSHConnect
 
