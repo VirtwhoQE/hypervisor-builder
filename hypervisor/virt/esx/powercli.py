@@ -440,7 +440,7 @@ class PowerCLI:
         if ret:
             return False
         else:
-            host_name = self._format(ret, output)[0]['FullyQualifiedDomainName']
+            host_name = self._format(ret, output)[0]["FullyQualifiedDomainName"]
             return host_name
 
     def host_name_set(self, host_ip, name):
@@ -473,5 +473,5 @@ class PowerCLI:
         if ret:
             return False
         else:
-            if self.host_search(host_ip)['host_cluster'] == new_cluster_name:
+            if self.host_search(host_ip)["host_cluster"] == new_cluster_name:
                 return True
