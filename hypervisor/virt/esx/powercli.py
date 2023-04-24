@@ -460,7 +460,7 @@ class PowerCLI:
             else:
                 return False
 
-    def cluster_set(self, host_ip, old_cluster_name, new_cluster_name):
+    def cluster_name_set(self, host_ip, old_cluster_name, new_cluster_name):
         """
         Modify the cluster name of the esx host.
         :param host_ip: the ip of the esx host
