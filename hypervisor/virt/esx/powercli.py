@@ -353,15 +353,15 @@ class PowerCLI:
             logger.info(f"Succeeded to find restart host {host_name}")
             return True
 
-    def host_search(self, host_name):
+    def host_search(self, host_ip):
         """
         Search the specific guest, return the expected attributes
-        :param host_name: the host name for esx
+        :param host_ip: the host ip for esx
         :return: host messages
         """
         cmd = (
             f"{self.cert} ConvertTo-Json @("
-            f"Get-VMHost {host_name} | Select * -ExcludeProperty ExtensionData)"
+            f"Get-VMHost {host_ip} | Select * -ExcludeProperty ExtensionData)"
         )
         ret, output = self.ssh.runcmd(cmd)
         output = self._format(ret, output)[0]
@@ -427,3 +427,50 @@ class PowerCLI:
         else:
             logger.info(f"Succeeded to stop host {host_name}")
             return True
+
+    def host_name_get(self, host_ip):
+        """
+        Get the host name for the esx host
+        :param host_ip: the ip of the esx host
+        :return: host name of the esx host
+        """
+        cmd = f"{self.cert} ConvertTo-Json @((Get-EsxCli -VMhost {host_ip}).system.hostname.get()|select FullyQualifiedDomainName)"
+        ret, output = self.ssh.runcmd(cmd)
+        if ret:
+            return False
+        else:
+            host_name = self._format(ret, output)[0]["FullyQualifiedDomainName"]
+            return host_name
+
+    def host_name_set(self, host_ip, name):
+        """
+        Modify the host name of the host.
+        :param host_ip: the ip of the esx host
+        :param name: the host name you would like to set
+        :return: host name of the esx host
+        """
+        cmd = f"{self.cert} (Get-EsxCli -VMhost {host_ip}).system.hostname.set($null, '{name}', $null)"
+        ret, _ = self.ssh.runcmd(cmd)
+        if ret:
+            return False
+        else:
+            if self.host_name_get(host_ip) == name:
+                return True
+            else:
+                return False
+
+    def cluster_name_set(self, host_ip, old_cluster_name, new_cluster_name):
+        """
+        Modify the cluster name of the esx host.
+        :param host_ip: the ip of the esx host
+        :param old_cluster_name: old cluster name
+        :param new_cluster_name: new cluster name
+        :return:
+        """
+        cmd = f"{self.cert} Set-Cluster -Cluster {old_cluster_name} -Name {new_cluster_name} -Confirm:$false"
+        ret, _ = self.ssh.runcmd(cmd)
+        if ret:
+            return False
+        else:
+            if self.host_search(host_ip)["host_cluster"] == new_cluster_name:
+                return True
