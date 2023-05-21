@@ -342,6 +342,15 @@ class LibvirtCLI:
             return True
 
     def guest_image_download(self, guest_name, image_url, xml_url, image_path, xml_path):
+        """
+        Download the guest image
+        :param guest_name:  the name of guest
+        :param image_url: the url link of guest image
+        :param xml_url: the xml file url link of guest
+        :param image_path: the path of the image
+        :param xml_path: the path of the xml file
+        :return:
+        """
         guest_image = f"{image_path}/{guest_name}.qcow2"
         guest_xml = f"{xml_path}/{guest_name}.xml"
         if self.url_validation(image_url) is False:
@@ -349,49 +358,47 @@ class LibvirtCLI:
             return False
         if self.url_validation(xml_url) is False:
             logger.error("xml_url is not available")
-        if self.guest_image_exist(guest_name) is False:
-            cmd = "rm -f {0}; rm -rf {1}; mkdir -p {1}; chmod a+rwx {1}".format(
-                guest_xml, image_path
-            )
+        if self.guest_image_exist(guest_name, image_path, xml_path) is False:
+            cmd = f"rm -f {guest_xml}; rm -rf {image_path}; mkdir -p {image_path}; "\
+                  f"chmod a+rwx {image_path}"
             self.ssh.runcmd(cmd)
             for i in range(5):
-                cmd = "curl -L {0} -o {1}".format(image_url, guest_image)
+                cmd = f"curl -L {image_url} -o {guest_image}"
                 ret, output = self.ssh.runcmd(cmd)
                 if ret == 0:
                     break
                 logger.warning("Failed to download libvirt image, try again...")
             for i in range(5):
-                cmd = "curl -L {0} -o {1}".format(xml_url, guest_xml)
+                cmd = f"curl -L {xml_url} -o {guest_xml}"
                 ret, output = self.ssh.runcmd(cmd)
                 if ret == 0:
                     break
                 logger.warning("Failed to download libvirt xml file, try again...")
-            cmd = "sed -i -e 's|<name>.*</name>|<name>{0}</name>|g' {1}".format(
-                guest_name, guest_xml
-            )
+            cmd = f"sed -i -e 's|<name>.*</name>|<name>{guest_name}</name>|g' {guest_xml}"
             self.ssh.runcmd(cmd)
-            cmd = "sed -i -e 's|<source file=.*/>|<source file=\"{0}\"/>|g' {1}".format(
-                guest_image, guest_xml
-            )
+            cmd = f"sed -i -e 's|<source file=.*/>|<source file=\"{guest_image}\"/>|g' {guest_xml}"
             self.ssh.runcmd(cmd)
             guest_mac = self.randomMAC()
-            cmd = "sed -i -e 's|<mac address=.*/>|<mac address=\"{0}\"/>|g' {1}".format(
-                guest_mac, guest_xml
-            )
+            cmd = f"sed -i -e 's|<mac address=.*/>|<mac address=\"{guest_mac}\"/>|g' {guest_xml}"
             self.ssh.runcmd(cmd)
             if self.rhel_version() == "9":
-                cmd = "sed -i -e 's|<graphics type=.* |<graphics type=\"vnc\" |g' {0}".format(
-                    guest_xml
-                )
+                cmd = f"sed -i -e 's|<graphics type=.* |<graphics type=\"vnc\" |g' {guest_xml}"
                 self.ssh.runcmd(cmd)
-        cmd = "virsh define {0}".format(guest_xml)
+        cmd = f"virsh define {guest_xml}"
         self.ssh.runcmd(cmd)
         logger.info(f"Succeeded to download libvirt image to {self.server}")
 
     def guest_image_exist(self, guest_name, image_path, xml_path):
-        guest_image = "{0}/{1}.qcow2".format(image_path, guest_name)
-        guest_xml = "{0}/{1}.xml".format(xml_path, guest_name)
-        cmd = "ls {0}; ls {1}".format(guest_image, guest_xml)
+        """
+        Identify if the image of guest exist
+        :param guest_name: the name of guest
+        :param image_path: the path of image
+        :param xml_path: the path of xml file
+        :return: if image exist, return True, else, return False
+        """
+        guest_image = f"{image_path}/{guest_name}.qcow2"
+        guest_xml = f"{xml_path}/{guest_name}.xml"
+        cmd = f"ls {guest_image}; ls {guest_xml}"
         ret, output = self.ssh.runcmd(cmd)
         if ret == 0 and "No such file or directory" not in output:
             logger.info(f"libvirt image and xml exist in {self.server}")
@@ -401,6 +408,11 @@ class LibvirtCLI:
             return False
 
     def url_validation(self, url):
+        """
+        Identify if the url is valid
+        :param url: the url link
+        :return: if the url is valid, return true; Else, return False
+        """
         cmd = f"if ( curl -o/dev/null -sfI '{url}' ); then echo 'true'; else echo 'false'; fi"
         output = os.popen(cmd).read()
         if output.strip() == "true":
@@ -409,6 +421,10 @@ class LibvirtCLI:
             return False
 
     def randomMAC(self):
+        """
+        Generate the Mac address randomly
+        :return: Mac dress
+        """
         mac = [
             0x06,
             random.randint(0x00, 0x2F),
@@ -420,6 +436,10 @@ class LibvirtCLI:
         return ":".join(map(lambda x: "%02x" % x, mac))
 
     def rhel_version(self):
+        """
+        Get the version of the RHEL system
+        :return: the version of the RHEL system
+        """
         cmd = "cat /etc/redhat-release"
         ret, output = self.ssh.runcmd(cmd)
         if ret == 0 and output is not None:
