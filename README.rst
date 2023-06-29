@@ -49,3 +49,10 @@ These hypervisors will be supported:
          -  API
    -  Collect kubevirt information
    -  Guest add/delete/start/stop/suspend/resume
+
+[Nutanix]
+   -  Connection
+         -  ncli/acli
+         -  API
+   -  Collect nutanix information
+   -  Guest add/delete/start/stop/suspend/resume
