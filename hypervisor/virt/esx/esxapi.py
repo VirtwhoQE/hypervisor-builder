@@ -59,10 +59,10 @@ class Esxapi:
         :param image_path: the path for the guest image which from the remote web
         :return: create successfully, return True, else, return False
         """
-        header = {
-            "name": guest_name,
+        # header = {
+        #     "name": guest_name,
             
-        }
+        # }
     
     def guest_exist(self, guest_name):
         """
@@ -84,6 +84,7 @@ class Esxapi:
             return False
         
         return True
+
     
     def guest_search(self, guest_name, uuid_info=False):
         """
@@ -104,6 +105,142 @@ class Esxapi:
             headers=header,
             timeout=self.timeout
         )
+        base_output = self._format(response)
+        
+        response = requests.get(
+            url=self.server+r'/api/vcenter/vm/'+guest_name+r'/guest/identity',
+            headers=header,
+            timeout=self.timeout
+        )
+        id_output = self._format(response)
+        
+        host_name = id_output["host_name"]
+        
+        guest_msgs = {
+            "guest_name": base_output["name"],
+            "guest_state": base_output["power_state"],
+            "guest_ip": id_output["ip_address"],
+            "guest_cpu": base_output["cpu"]["count"],
+            # "esx_ip": output["VMHost"]["Name"],
+            "esx_hostname": id_output["host_name"],
+            # "esx_version": output["VMHost"]["Version"],
+            # "esx_state": output["VMHost"]["PowerState"],
+            # "esx_cpu": str(output["VMHost"]["NumCpu"]),
+            # "esx_cluster": output["VMHost"]["Parent"],
+        }
+        if uuid_info:
+            guest_msgs["guest_uuid"] = self.guest_uuid(guest_name)
+            guest_msgs["esx_uuid"] = self.host_uuid(host_name)
+            guest_msgs["esx_hwuuid"] = self.host_hwuuid(host_name)
+        return guest_msgs
+    
+    def guest_start(self, guest_name):
+        header = {
+            "vmware-api-session-id": self.session_id
+        }
+        
+        response = requests.get(
+            url=self.server+r'/api/vcenter/vm/'+guest_name+r'/power?action=start',
+            headers=header,
+            timeout=self.timeout
+        )
+        
+        if response.status_code==204:
+            logger.info("Succeeded to start vcenter guest")
+            return True
+        else:
+            logger.error("Failed to start vcenter guest")
+            return False
+    
+    def guest_stop(self, guest_name):
+        header = {
+            "vmware-api-session-id": self.session_id
+        }
+        
+        response = requests.get(
+            url=self.server+r'/api/vcenter/vm/'+guest_name+r'/power?action=stop',
+            headers=header,
+            timeout=self.timeout
+        )
+        
+        if response.status_code==204:
+            logger.info("Succeeded to stop vcenter guest")
+            return True
+        else:
+            logger.error("Failed to stop vcenter guest")
+            return False
+    
+    def guest_suspend(self, guest_name):
+        header = {
+            "vmware-api-session-id": self.session_id
+        }
+        
+        response = requests.get(
+            url=self.server+r'/api/vcenter/vm/'+guest_name+r'/power?action=suspend',
+            headers=header,
+            timeout=self.timeout
+        )
+        
+        if response.status_code==204:
+            logger.info("Succeeded to suspend vcenter guest")
+            return True
+        else:
+            logger.error("Failed to suspend vcenter guest")
+            return False
+    
+    def guest_resume(self, guest_name):
+        header = {
+            "vmware-api-session-id": self.session_id
+        }
+        
+        response = requests.get(
+            url=self.server+r'/api/vcenter/vm/'+guest_name+r'/power?action=start',
+            headers=header,
+            timeout=self.timeout
+        )
+        
+        if response.status_code==204:
+            logger.info("Succeeded to resume vcenter guest")
+            return True
+        else:
+            logger.error("Failed to resume vcenter guest")
+            return False
+
+    def guest_uuid(self, guest_name):
+        header = {
+            "vmware-api-session-id": self.session_id
+        }
+        
+        response = requests.get(
+            url=self.server+r'/api/vcenter/vm/'+guest_name,
+            headers=header,
+            timeout=self.timeout
+        )
         
         output = self._format(response)
-        
+        return output["identity"]["instance_uuid"]
+    
+    # https://developer.vmware.com/apis/vsphere-automation/latest/esx/api/esx/software/get/
+    def host_uuid(self):
+        pass
+    
+    def host_hwuuid(self, host_name):
+        pass
+    
+    def host_start(self):
+        pass
+    
+    def host_stop(self):
+        pass
+    
+    def host_restart(self):
+        pass
+    
+    def host_name_get(self):
+        pass
+    
+    def host_name_set(self):
+        pass
+    
+    def cluster_name_set(self):
+        pass
