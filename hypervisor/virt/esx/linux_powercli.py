@@ -49,9 +49,6 @@ class PowerCLI:
         res = re.findall(r"[[][\W\w]+[]]", stdout)[0]
         if ret == 0 and res is not None:
             return json.loads(res)
-
-    def cmd_format(self, cmd):
-        return self.cert+cmd+'\''
     
     def info(self):
         """

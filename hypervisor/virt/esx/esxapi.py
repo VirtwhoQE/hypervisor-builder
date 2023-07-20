@@ -50,7 +50,7 @@ class Esxapi:
         
         return output
     
-    def guest_add(self, host, host_ssh_user, host_ssh_pwd, guest_name, image_path):
+    def guest_add(self):
         """
         Create a new virtual machine.
         :param host: the host on which you want to create the new virtual machine.
@@ -68,6 +68,7 @@ class Esxapi:
         :param guest_name: the name for the guest
         :return: guest exists, return True, else, return False.
         """
+        # https://developer.vmware.com/apis/vsphere-automation/latest/vcenter/vcenter/VM/
         header = {
             "vmware-api-session-id": self.session_id
         }
@@ -98,6 +99,7 @@ class Esxapi:
             "vmware-api-session-id": self.session_id
         }
         
+        # https://developer.vmware.com/apis/vsphere-automation/latest/vcenter/vcenter/VM/
         response = requests.get(
             url=self.server+r'/api/vcenter/vm/'+guest_name,
             headers=header,
@@ -105,6 +107,7 @@ class Esxapi:
         )
         base_output = self._format(response)
         
+        # https://developer.vmware.com/apis/vsphere-automation/latest/vcenter/api/vcenter/vm/vm/guest/identity/get/
         response = requests.get(
             url=self.server+r'/api/vcenter/vm/'+guest_name+r'/guest/identity',
             headers=header,
@@ -112,7 +115,7 @@ class Esxapi:
         )
         id_output = self._format(response)
         
-        host_name = id_output["host_name"]
+        # host_name = id_output["host_name"]
         
         guest_msgs = {
             "guest_name": base_output["name"],
@@ -126,13 +129,19 @@ class Esxapi:
             # "esx_cpu": str(output["VMHost"]["NumCpu"]),
             # "esx_cluster": output["VMHost"]["Parent"],
         }
-        if uuid_info:
-            guest_msgs["guest_uuid"] = self.guest_uuid(guest_name)
+        # if uuid_info:
+            # guest_msgs["guest_uuid"] = self.guest_uuid(guest_name)
             # guest_msgs["esx_uuid"] = self.host_uuid(host_name)
             # guest_msgs["esx_hwuuid"] = self.host_hwuuid(host_name)
         return guest_msgs
     
     def guest_start(self, guest_name):
+        """
+        Power on virtual machines.
+        :param guest_name: the virtual machines you want to power on.
+        :return: power on successfully, return True, else, return False.
+        """
+        # https://developer.vmware.com/apis/vsphere-automation/latest/vcenter/vm/guest.power/
         header = {
             "vmware-api-session-id": self.session_id
         }
@@ -151,6 +160,7 @@ class Esxapi:
             return False
     
     def guest_stop(self, guest_name):
+        # https://developer.vmware.com/apis/vsphere-automation/latest/vcenter/vm/guest.power/
         header = {
             "vmware-api-session-id": self.session_id
         }
@@ -169,6 +179,12 @@ class Esxapi:
             return False
     
     def guest_suspend(self, guest_name):
+        """
+        Suspend virtual machines.
+        :param guest_name: the virtual machines you want to suspend.
+        :return: suspend successfully, return True, else, return False.
+        """
+        # https://developer.vmware.com/apis/vsphere-automation/latest/vcenter/vm/guest.power/
         header = {
             "vmware-api-session-id": self.session_id
         }
@@ -187,6 +203,12 @@ class Esxapi:
             return False
     
     def guest_resume(self, guest_name):
+        """
+        Resume virtual machines
+        :param guest_name: the virtual machines you want to resume.
+        :return: resume successfully, return True, else, return False.
+        """
+        # https://developer.vmware.com/apis/vsphere-automation/latest/vcenter/vm/guest.power/
         header = {
             "vmware-api-session-id": self.session_id
         }
@@ -204,25 +226,14 @@ class Esxapi:
             logger.error("Failed to resume vcenter guest")
             return False
 
-    def guest_uuid(self, guest_name):
-        header = {
-            "vmware-api-session-id": self.session_id
-        }
-        
-        response = requests.get(
-            url=self.server+r'/api/vcenter/vm/'+guest_name,
-            headers=header,
-            timeout=self.timeout
-        )
-        
-        output = self._format(response)
-        return output["identity"]["instance_uuid"]
+    def guest_uuid(self):
+        pass
     
     # https://developer.vmware.com/apis/vsphere-automation/latest/esx/api/esx/software/get/
     def host_uuid(self):
         pass
     
-    def host_hwuuid(self, host_name):
+    def host_hwuuid(self):
         pass
     
     def host_start(self):
