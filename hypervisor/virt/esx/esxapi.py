@@ -60,10 +60,7 @@ class Esxapi:
         :param image_path: the path for the guest image which from the remote web
         :return: create successfully, return True, else, return False
         """
-        # header = {
-        #     "name": guest_name,
-            
-        # }
+        pass
     
     def guest_exist(self, guest_name):
         """
@@ -131,8 +128,8 @@ class Esxapi:
         }
         if uuid_info:
             guest_msgs["guest_uuid"] = self.guest_uuid(guest_name)
-            guest_msgs["esx_uuid"] = self.host_uuid(host_name)
-            guest_msgs["esx_hwuuid"] = self.host_hwuuid(host_name)
+            # guest_msgs["esx_uuid"] = self.host_uuid(host_name)
+            # guest_msgs["esx_hwuuid"] = self.host_hwuuid(host_name)
         return guest_msgs
     
     def guest_start(self, guest_name):
