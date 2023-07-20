@@ -1,8 +1,5 @@
 import json
 import re
-import sys
-
-sys.path.append("/home/jzhang/文档/test_repos/hypervisor-builder") 
 
 from hypervisor import logger
 from hypervisor.ssh import SSHConnect
