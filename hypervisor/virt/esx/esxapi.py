@@ -1,7 +1,6 @@
 import requests
 import json
 from hypervisor import logger
-from hypervisor.ssh import SSHConnect
 
 # Because the esxapi is not stable, so we use the ssh and PowerCLI to control the esx host
 # Now this file is unused, but we will use it in the future
