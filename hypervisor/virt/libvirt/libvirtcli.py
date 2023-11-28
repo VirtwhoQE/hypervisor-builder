@@ -242,7 +242,6 @@ class LibvirtCLI:
         Autostart a virtual machines.
         :param guest_name: the virtual machines you want to auto start.
         :return: set up successfully, return True, else, return False.
-
         """
         cmd = "virsh autostart {0}".format(guest_name)
         ret, output = self.ssh.runcmd(cmd)
@@ -256,7 +255,6 @@ class LibvirtCLI:
         Power on virtual machines.
         :param guest_name: the virtual machines you want to power on.
         :return: power on successfully, return True, else, return False.
-
         """
         cmd = "virsh --connect qemu:///system start {0}".format(guest_name)
         ret, output = self.ssh.runcmd(cmd)
