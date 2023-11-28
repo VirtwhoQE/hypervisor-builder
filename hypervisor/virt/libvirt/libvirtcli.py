@@ -237,6 +237,20 @@ class LibvirtCLI:
             )
             return None
 
+    def guest_autostart(self, guest_name):
+        """
+        Autostart a virtual machines.
+        :param guest_name: the virtual machines you want to auto start.
+        :return: set up successfully, return True, else, return False.
+
+        """
+        cmd = "virsh autostart {0}".format(guest_name)
+        ret, output = self.ssh.runcmd(cmd)
+        if not ret:
+            logger.info("Succeeded to auto start libvirt({0}) guest".format(self.server))
+        else:
+            logger.info("Failed to auto start libvirt({0}) guest".format(self.server))
+
     def guest_start(self, guest_name):
         """
         Power on virtual machines.
@@ -319,6 +333,7 @@ class LibvirtCLI:
         for i in range(5):
             if self.guest_exist(guest_name):
                 logger.info(f"Succeeded to add libvirt({self.server}) guest")
+                self.guest_autostart(guest_name)
                 return self.guest_start(guest_name)
             logger.warning("no libvirt guest found, try to search again...")
             time.sleep(15)
