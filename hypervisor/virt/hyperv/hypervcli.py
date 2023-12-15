@@ -261,3 +261,35 @@ class HypervCLI:
         else:
             logger.error("Failed to resume hyperv guest")
             return False
+
+            
+    def hypervisor_guid(self):
+        cmd = r"PowerShell (gwmi -Namespace Root\Virtualization\V2 -ClassName Msvm_VirtualSystemSettingData).BiosGUID"
+        ret, output = self.ssh.runcmd(cmd)
+        if not ret:
+            logger.info("Succeeded to get hypervisor guid")
+            return output.strip()
+        else:
+            logger.error("Failed to get hypervisor guid")
+            return ""
+    
+    def hypervisor_change_guid(self, guid, guest_name):
+        create_function_cmd = r"PowerShell (Invoke-WebRequest http://10.73.131.85/ci/hyperv/New-VMBIOSGUID.ps1 -OutFile ./New-VMBIOSGUID.ps1)"
+        ret, _ = self.ssh.runcmd(create_function_cmd)
+        if ret:
+            logger.error("Failed to create function")
+            return False
+        
+        import_module_cmd = r"Import-Module ./New-VMBIOSGUID.ps1 -Force"
+        set_ignore_verfiy_cmd = r"$ConfirmPreference = 'None'"
+        change_guid_cmd = 'PowerShell -Command "{}; {}; New-VMBIOSGUID -VM {} -NewID {}"'.format(set_ignore_verfiy_cmd,
+                                                                                                 import_module_cmd,
+                                                                                                 guest_name,
+                                                                                                 guid)
+        ret, _ = self.ssh.runcmd(change_guid_cmd)
+        if not ret:
+            logger.info("Succeeded to change hypervisor guid")
+            return True
+        else:
+            logger.error("Failed to change hypervisor guid")
+            return False
