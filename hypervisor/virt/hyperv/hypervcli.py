@@ -264,6 +264,10 @@ class HypervCLI:
 
             
     def hypervisor_guid(self):
+        """
+        Get guid for hypervisor
+        :return: guid for hypervisor
+        """
         cmd = r"PowerShell (gwmi -Namespace Root\Virtualization\V2 -ClassName Msvm_VirtualSystemSettingData).BiosGUID"
         ret, output = self.ssh.runcmd(cmd)
         if not ret:
@@ -274,6 +278,12 @@ class HypervCLI:
             return ""
     
     def hypervisor_change_guid(self, guid, guest_name):
+        """
+        Change guid for hypervisor
+        :param guid: the guid for hypervisor
+        :param guest_name: the name for the guest
+        :return: change guid successfully, return True, else, return False.
+        """
         create_function_cmd = r"PowerShell (Invoke-WebRequest http://10.73.131.85/ci/hyperv/New-VMBIOSGUID.ps1 -OutFile ./New-VMBIOSGUID.ps1)"
         ret, _ = self.ssh.runcmd(create_function_cmd)
         if ret:
