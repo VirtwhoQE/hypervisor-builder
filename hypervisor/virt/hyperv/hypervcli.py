@@ -277,10 +277,7 @@ class HypervCLI:
         
         import_module_cmd = r"Import-Module ./New-VMBIOSGUID.ps1 -Force"
         set_ignore_verfiy_cmd = r"$ConfirmPreference = 'None'"
-        change_guid_cmd = 'PowerShell -Command "{}; {}; New-VMBIOSGUID -VM {} -NewID {}"'.format(set_ignore_verfiy_cmd,
-                                                                                                 import_module_cmd,
-                                                                                                 guest_name,
-                                                                                                 guid)
+        change_guid_cmd = f'PowerShell -Command "{set_ignore_verfiy_cmd}; {import_module_cmd}; New-VMBIOSGUID -VM {guest_name} -NewID {guid}"'
         ret, _ = self.ssh.runcmd(change_guid_cmd)
         if not ret:
             logger.info("Succeeded to change hypervisor guid")
