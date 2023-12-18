@@ -261,3 +261,27 @@ class HypervCLI:
         else:
             logger.error("Failed to resume hyperv guest")
             return False
+    
+    def guest_uuid_change(self, guid, guest_name):
+        """
+        Change guid for guest
+        :param guid: the guid for guest
+        :param guest_name: the name for the guest
+        :return: change guid successfully, return True, else, return False.
+        """
+        create_function_cmd = r"PowerShell (Invoke-WebRequest http://10.73.131.85/ci/hyperv/New-VMBIOSGUID.ps1 -OutFile ./New-VMBIOSGUID.ps1)"
+        ret, _ = self.ssh.runcmd(create_function_cmd)
+        if ret:
+            logger.error("Failed to create function")
+            return False
+        
+        import_module_cmd = r"Import-Module ./New-VMBIOSGUID.ps1 -Force"
+        set_ignore_verfiy_cmd = r"$ConfirmPreference = 'None'"
+        change_guid_cmd = f'PowerShell -Command "{set_ignore_verfiy_cmd}; {import_module_cmd}; New-VMBIOSGUID -VM {guest_name} -NewID {guid}"'
+        ret, _ = self.ssh.runcmd(change_guid_cmd)
+        if not ret:
+            logger.info("Succeeded to change hypervisor guid")
+            return True
+        else:
+            logger.error("Failed to change hypervisor guid")
+            return False
