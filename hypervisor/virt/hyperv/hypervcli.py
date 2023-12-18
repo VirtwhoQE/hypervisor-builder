@@ -261,26 +261,11 @@ class HypervCLI:
         else:
             logger.error("Failed to resume hyperv guest")
             return False
-
-            
-    def hypervisor_guid(self):
-        """
-        Get guid for hypervisor
-        :return: guid for hypervisor
-        """
-        cmd = r"PowerShell (gwmi -Namespace Root\Virtualization\V2 -ClassName Msvm_VirtualSystemSettingData).BiosGUID"
-        ret, output = self.ssh.runcmd(cmd)
-        if not ret:
-            logger.info("Succeeded to get hypervisor guid")
-            return output.strip()
-        else:
-            logger.error("Failed to get hypervisor guid")
-            return ""
     
-    def hypervisor_change_guid(self, guid, guest_name):
+    def guest_uuid_change(self, guid, guest_name):
         """
-        Change guid for hypervisor
-        :param guid: the guid for hypervisor
+        Change guid for guest
+        :param guid: the guid for guest
         :param guest_name: the name for the guest
         :return: change guid successfully, return True, else, return False.
         """
