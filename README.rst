@@ -54,5 +54,7 @@ These hypervisors will be supported:
    -  Connection
          -  ncli/acli
          -  API
+
    -  Collect nutanix information
+
    -  Guest add/delete/start/stop/suspend/resume

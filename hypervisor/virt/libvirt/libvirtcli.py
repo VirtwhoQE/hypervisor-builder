@@ -246,7 +246,9 @@ class LibvirtCLI:
         cmd = "virsh autostart {0}".format(guest_name)
         ret, output = self.ssh.runcmd(cmd)
         if not ret:
-            logger.info("Succeeded to auto start libvirt({0}) guest".format(self.server))
+            logger.info(
+                "Succeeded to auto start libvirt({0}) guest".format(self.server)
+            )
         else:
             logger.info("Failed to auto start libvirt({0}) guest".format(self.server))
 
@@ -354,7 +356,9 @@ class LibvirtCLI:
             logger.info(f"Succeeded to delete libvirt({self.server}) guest")
             return True
 
-    def guest_image_download(self, guest_name, image_url, xml_url, image_path, xml_path):
+    def guest_image_download(
+        self, guest_name, image_url, xml_url, image_path, xml_path
+    ):
         """
         Download the guest image
         :param guest_name:  the name of guest
@@ -372,8 +376,10 @@ class LibvirtCLI:
         if self.url_validation(xml_url) is False:
             logger.error("xml_url is not available")
         if self.guest_image_exist(guest_name, image_path, xml_path) is False:
-            cmd = f"rm -f {guest_xml}; rm -rf {image_path}; mkdir -p {image_path}; "\
-                  f"chmod a+rwx {image_path}"
+            cmd = (
+                f"rm -f {guest_xml}; rm -rf {image_path}; mkdir -p {image_path}; "
+                f"chmod a+rwx {image_path}"
+            )
             self.ssh.runcmd(cmd)
             for i in range(5):
                 cmd = f"curl -L {image_url} -o {guest_image}"
@@ -387,7 +393,9 @@ class LibvirtCLI:
                 if ret == 0:
                     break
                 logger.warning("Failed to download libvirt xml file, try again...")
-            cmd = f"sed -i -e 's|<name>.*</name>|<name>{guest_name}</name>|g' {guest_xml}"
+            cmd = (
+                f"sed -i -e 's|<name>.*</name>|<name>{guest_name}</name>|g' {guest_xml}"
+            )
             self.ssh.runcmd(cmd)
             cmd = f"sed -i -e 's|<source file=.*/>|<source file=\"{guest_image}\"/>|g' {guest_xml}"
             self.ssh.runcmd(cmd)
