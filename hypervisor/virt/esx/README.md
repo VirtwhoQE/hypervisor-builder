@@ -1,6 +1,6 @@
 # Hypervisor-builder: vCenter
 Hyperivosr-builder tool supports the vcenter hypervisor by PowerCLI Commands following the doc:  
-[VMware vSphere PowerCLI Cmdlets Reference](https://vdc-repo.vmware.com/vmwb-repository/dcr-public/f2319b2a-6378-4635-a1cd-90b14949b62a/0ac4f829-f79b-40a6-ac10-d22ec76937ec/doc/index.html)
+[VMware PowerCLI Documentation](https://developer.vmware.com/powercli/)
 
 
 Provide functions:
