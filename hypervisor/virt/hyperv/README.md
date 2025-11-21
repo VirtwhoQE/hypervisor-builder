@@ -1,21 +1,20 @@
 # Hypervisor-builder: Hyper-V
-Hyperivosr-builder tool supports the Hyper-V hypervisor by PowerCLI Commands
 
+Hyperivosr-builder tool supports the Hyper-V hypervisor by PowerCLI Commands
 
 Provide functions:
 - Collect Hyper-V information
 - Host uuid
 - Guest search/add/delete/start/stop/suspend/resume
 
-
 ## Install Environment
+
 Set up the Hyper-V environment
 
-
 ## Usages
+
 ```
 from hypervisor.virt.hyperv.hypervcli import HypervCLI
-
 
 def test_hypervcli():
     # set up the values

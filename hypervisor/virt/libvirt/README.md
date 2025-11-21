@@ -1,21 +1,20 @@
 # Hypervisor-builder: Libvirt
-Hyperivosr-builder tool supports the libvirt hypervisor by virsh Commands
 
+Hyperivosr-builder tool supports the libvirt hypervisor by virsh Commands
 
 Provide functions:
 - Collect libvirt information
 - Libvirt host uuid/version/cpu
 - Guest search/start/stop/suspend/resume
 
-
 ## Install Environment
+
 Set up the libvirt environment
 
-
 ## Usages
+
 ```
 from hypervisor.virt.libvirt.libvirtcli import LibvirtCLI
-
 
 def test_libevirt():
     # set up the values

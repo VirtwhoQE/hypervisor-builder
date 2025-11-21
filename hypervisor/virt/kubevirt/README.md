@@ -1,23 +1,22 @@
 # Hypervisor-builder: KubeVirt
+
 Hyperivosr-builder tool supports the kubeVirt hypervisor by kubevirt API
 interfaces following the doc:
 [KubeVirt API Reference](http://kubevirt.io/api-reference/)
-
 
 Provide functions:
 - Collect kubevirt node information
 - Collect kubevirt guest information
 - Guest search/start/stop
 
-
 ## Install Environment
+
 Build the kubevirt hypervisor environment
 
-
 ## Usages
+
 ```
 from hypervisor.virt.kubevirt.kubevirtapi import KubevirtApi
-
 
 def test_kubevirt():
     # set up the values

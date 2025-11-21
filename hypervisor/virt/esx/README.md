@@ -1,23 +1,22 @@
 # Hypervisor-builder: vCenter
+
 Hyperivosr-builder tool supports the vcenter hypervisor by PowerCLI Commands
 following the doc:
 [VMware PowerCLI Documentation](https://developer.vmware.com/powercli/)
-
 
 Provide functions:
 - Collect vcenter information
 - Host search/add/delete/restart/start/stop
 - Guest search/add/delete/start/stop/suspend/resume
 
-
 ## Install Environment
+
 Build the vcenter and ESXi host environment
 
-
 ## Usages
+
 ```
 from hypervisor.virt.esx.powercli import PowerCLI
-
 
 def test_powercli():
     # set up the values
