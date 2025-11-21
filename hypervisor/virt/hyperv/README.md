@@ -13,7 +13,7 @@ Set up the Hyper-V environment
 
 ## Usages
 
-```
+```python
 from hypervisor.virt.hyperv.hypervcli import HypervCLI
 
 def test_hypervcli():
