@@ -5,7 +5,7 @@ Hyperivosr-builder tool supports the Hyper-V hypervisor by PowerCLI Commands
 Provide functions:
 - Collect Hyper-V information
 - Host uuid
-- Guest search/add/delete/start/stop/suspend/resume  
+- Guest search/add/delete/start/stop/suspend/resume
 
 
 ## Install Environment
@@ -36,22 +36,22 @@ def test_hypervcli():
 
     # Create a new virtual machine.
     cli.guest_add(guest_name, image_path)
-    
+
     # Remove the specified virtual machines from Hyper-v hypervisor.
     cli.guest_del(guest_name)
-    
+
     # Check if the Hyper-v guest exists
     cli.guest_exist(guest_name)
-    
+
     # Power on virtual machines.
     cli.guest_start(guest_name)
-    
+
     # Power off virtual machines.
     cli.guest_stop(guest_name)
-    
+
     # Suspend virtual machines.
     cli.guest_suspend(guest_name)
-    
+
     # Resume virtual machines
     cli.guest_resume(guest_name)
 ```
