@@ -15,7 +15,7 @@ Build the kubevirt hypervisor environment
 
 ## Usages
 
-```
+```python
 from hypervisor.virt.kubevirt.kubevirtapi import KubevirtApi
 
 def test_kubevirt():

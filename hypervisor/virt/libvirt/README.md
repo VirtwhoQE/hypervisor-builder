@@ -13,7 +13,7 @@ Set up the libvirt environment
 
 ## Usages
 
-```
+```python
 from hypervisor.virt.libvirt.libvirtcli import LibvirtCLI
 
 def test_libevirt():

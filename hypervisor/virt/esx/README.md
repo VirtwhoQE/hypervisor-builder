@@ -15,7 +15,7 @@ Build the vcenter and ESXi host environment
 
 ## Usages
 
-```
+```python
 from hypervisor.virt.esx.powercli import PowerCLI
 
 def test_powercli():
