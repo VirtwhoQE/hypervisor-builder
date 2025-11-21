@@ -261,7 +261,7 @@ class HypervCLI:
         else:
             logger.error("Failed to resume hyperv guest")
             return False
-    
+
     def guest_uuid_change(self, guid, guest_name):
         """
         Change guid for guest
@@ -274,7 +274,7 @@ class HypervCLI:
         if ret:
             logger.error("Failed to create function")
             return False
-        
+
         import_module_cmd = r"Import-Module ./New-VMBIOSGUID.ps1 -Force"
         set_ignore_verfiy_cmd = r"$ConfirmPreference = 'None'"
         change_guid_cmd = f'PowerShell -Command "{set_ignore_verfiy_cmd}; {import_module_cmd}; New-VMBIOSGUID -VM {guest_name} -NewID {guid}"'

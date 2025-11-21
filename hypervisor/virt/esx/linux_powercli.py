@@ -37,7 +37,7 @@ class PowerCLI:
             f"-Password {self.admin_passwd};"
         )
         self.ssh = SSHConnect(host=client_server, user=client_user, pwd=client_passwd)
-    
+
     def _format(self, ret=0, stdout=None):
         """
         Convert the json string to python list data
@@ -45,11 +45,11 @@ class PowerCLI:
         :param stdout: output for the execute command
         :return: the list after json.loads
         """
-        stdout = re.sub('\[+[\d+$]', '', stdout)
+        stdout = re.sub("\[+[\d+$]", "", stdout)
         res = re.findall(r"[[][\W\w]+[]]", stdout)[0]
         if ret == 0 and res is not None:
             return json.loads(res)
-    
+
     def info(self):
         """
         Get the VMhost info
@@ -93,9 +93,7 @@ class PowerCLI:
         """
         if self.guest_search(guest_name)["guest_state"] != 1:
             self.guest_stop(guest_name)
-        cmd = (
-            f"pwsh -c '{self.cert} Remove-VM -VM {guest_name} -DeletePermanently -Confirm:$false'"
-        )
+        cmd = f"pwsh -c '{self.cert} Remove-VM -VM {guest_name} -DeletePermanently -Confirm:$false'"
         ret, _ = self.ssh.runcmd(cmd)
         if not ret and not self.guest_exist(guest_name):
             logger.info("Succeeded to delete vcenter guest")
