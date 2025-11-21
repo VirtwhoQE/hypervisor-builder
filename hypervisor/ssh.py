@@ -21,7 +21,7 @@ class SSHConnect:
         self.rsa = rsafile
         self.port = port
         self.timeout = timeout
-        self.err = "passwd or rsafile can not be None"
+        self.err = "passwd, rsafile, or ssh-agent must be available"
 
     def _connect(self):
         """SSH command execution connection"""
@@ -30,7 +30,8 @@ class SSHConnect:
         elif self.rsa:
             return self.rsa_connect()
         else:
-            raise ConnectionError(self.err)
+            # Try to use keys from SSH AutoAgent
+            return self.pwd_connect()
 
     def _transfer(self):
         """Sftp download/upload execution connection"""
@@ -39,13 +40,24 @@ class SSHConnect:
         elif self.rsa:
             return self.rsa_transfer()
         else:
-            raise ConnectionError(self.err)
+            # Try to use keys from SSH AutoAgent
+            return self.pwd_transfer()
 
     def pwd_connect(self):
         """SSH command execution connection by password"""
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.host, self.port, self.user, self.pwd, timeout=self.timeout)
+        if self.pwd:
+            ssh.connect(self.host, self.port, self.user, self.pwd, timeout=self.timeout)
+        else:
+            logger.info("ssh connect will try to use ssh-agent")
+            ssh.connect(
+                hostname=self.host,
+                port=self.port,
+                username=self.user,
+                timeout=self.timeout,
+                allow_agent=True,
+            )
         return ssh
 
     def rsa_connect(self):
@@ -58,8 +70,13 @@ class SSHConnect:
 
     def pwd_transfer(self):
         """Sftp download/upload execution connection by password"""
-        transport = paramiko.Transport(self.host, self.port)
-        transport.connect(username=self.user, password=self.pwd)
+        if self.pwd:
+            transport = paramiko.Transport(self.host, self.port)
+            transport.connect(username=self.user, password=self.pwd)
+        else:
+            logger.info("ssh transfer will try to use ssh-agent")
+            transport = paramiko.Transport((self.host, self.port))
+            transport.connect(username=self.user, allow_agent=True)
         sftp = paramiko.SFTPClient.from_transport(transport)
         return sftp, transport
 
