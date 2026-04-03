@@ -14,6 +14,10 @@ setup(
         "hypervisor.virt.libvirt",
         "hypervisor.virt.kubevirt",
     ],
+    install_requires=[
+        "paramiko",
+        "pyvmomi",
+    ],
     url="https://github.com/VirtwhoQE/hypervisor-builder",
     license="GPL-3.0",
     author="",

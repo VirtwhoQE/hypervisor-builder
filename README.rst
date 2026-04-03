@@ -38,12 +38,6 @@ These hypervisors will be supported:
    -  Collect libvirt information
    -  Guest add/delete/start/stop/suspend/resume
 
-[XEN]
-   -  Connection
-         -  xe command line
-   -  Collect xen information
-   -  Guest add/delete/start/stop/suspend/resume
-
 [Kubevirt]
    -  Connection
          -  API

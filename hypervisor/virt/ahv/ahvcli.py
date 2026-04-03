@@ -47,7 +47,7 @@ class AHVaCLI:
         if '"value": true' in output:
             logger.info("Succeeded to set JSON format output")
         else:
-            FailException("Failed to set JSON format output")
+            raise FailException("Failed to set JSON format output")
 
     def get_ncli_info(self, cmd, value):
         """
