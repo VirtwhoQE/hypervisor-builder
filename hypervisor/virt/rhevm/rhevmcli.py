@@ -56,7 +56,7 @@ class RHEVMCLI:
         Check if the oVirt manager could be reached.
         :return:
         """
-        cmd = f"echo | ovirt-shell -c -E  'ping'"
+        cmd = "echo | ovirt-shell -c -E  'ping'"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and "success" in output:
             logger.info(f"Succeeded to connect RHEVM({self.server}) shell")
@@ -173,7 +173,7 @@ class RHEVMCLI:
             logger.info(f"Succeeded to get rhevm guest ip ({guest_ip})")
             return output.strip()
         else:
-            logger.info(f"Failed to get rhevm guest ip")
+            logger.info("Failed to get rhevm guest ip")
 
     def get_gateway(self, host_ip, host_user, host_pwd):
         """

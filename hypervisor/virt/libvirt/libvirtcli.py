@@ -191,7 +191,7 @@ class LibvirtCLI:
                 logger.info(f"Succeeded to get libvirt guest ip ({guest_ip})")
                 return guest_ip
             else:
-                logger.error(f"Failed to get libvirt guest ip")
+                logger.error("Failed to get libvirt guest ip")
                 return None
         return None
 
