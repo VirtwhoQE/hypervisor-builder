@@ -1,5 +1,6 @@
 import json
 import math
+import re
 import ssl
 import urllib3
 
@@ -15,10 +16,12 @@ class KubevirtApi:
     """Kubevirt REST Api interface class following the document:
     http://kubevirt.io/api-reference/v0.44.3/operations.html"""
 
-    def __init__(self, endpoint, token, internal_debug=None):
+    def __init__(self, endpoint, token, namespace=None, internal_debug=None):
         """
         :param endpoint: endpoint for the kubevirt server
         :param token: token for the kubevirt server
+        :param namespace: optional namespace to scope API calls (required for
+            environments where cluster-wide listing is forbidden, e.g. ITUP)
         :param internal_debug: detail log of the rest calls.
         """
         self._pool_manager = urllib3.PoolManager(
@@ -26,6 +29,7 @@ class KubevirtApi:
         )
         self.endpoint = endpoint
         self.token = f"Bearer {token}"
+        self.namespace = namespace
         self.internal_debug = internal_debug
 
     def _kubevirt_version(self):
@@ -87,24 +91,39 @@ class KubevirtApi:
         """
         return self._request("/api/v1/nodes")
 
+    def _ns_prefix(self):
+        """Return the namespace path segment when namespace-scoped calls are
+        required, or an empty string for cluster-wide calls."""
+        if self.namespace:
+            return f"/namespaces/{self.namespace}"
+        return ""
+
     def get_vminst(self):
         """
         Returns the params for the virtual manager instances by
-        GET /apis/kubevirt.io/v1/virtualmachineinstances
+        GET /apis/kubevirt.io/v1/[namespaces/{ns}/]virtualmachineinstances
         :return: the params for the virtual manager instances
         """
         path = (
-            "/apis/kubevirt.io/" + self._kubevirt_version() + "/virtualmachineinstances"
+            "/apis/kubevirt.io/"
+            + self._kubevirt_version()
+            + self._ns_prefix()
+            + "/virtualmachineinstances"
         )
         return self._request(path)
 
     def get_vms(self):
         """
         Returns the params for the virtual managers by
-        GET /apis/kubevirt.io/v1/virtualmachines
+        GET /apis/kubevirt.io/v1/[namespaces/{ns}/]virtualmachines
         :return:
         """
-        path = "/apis/kubevirt.io/" + self._kubevirt_version() + "/virtualmachines"
+        path = (
+            "/apis/kubevirt.io/"
+            + self._kubevirt_version()
+            + self._ns_prefix()
+            + "/virtualmachines"
+        )
         return self._request(path)
 
     def get_nodes_list(self):
@@ -130,22 +149,60 @@ class KubevirtApi:
             cpu = int(math.floor(int(cpu[:-1]) / 1000))
         return str(cpu)
 
+    @staticmethod
+    def _derive_ip_from_ec2_hostname(hostname):
+        """Extract an IP address from an EC2-style internal hostname.
+
+        For example, ``ip-10-31-105-25.ec2.internal`` -> ``10.31.105.25``.
+        Returns *None* if the hostname does not match the pattern.
+        """
+        match = re.match(r"^ip-(\d+)-(\d+)-(\d+)-(\d+)\.", hostname)
+        if match:
+            return ".".join(match.groups())
+        return None
+
     def get_host_info(self, node_name):
         """
         Returns the messages for the host.
         :param node_name: the name for the specific node
         :return: return the host info include the host uuid, cpu, version and hostname
+
+        When the Nodes API is inaccessible (e.g. ITUP.Scale tenant
+        restrictions), the method falls back to deriving the worker IP
+        from the EC2-style hostname and populates only the hostname
+        field.
         """
-        nodes = self.get_nodes()
         host_info = {}
-        for node in nodes["items"]:
-            if node["metadata"]["name"] == node_name:
-                host_info["uuid"] = node["status"]["nodeInfo"]["machineID"]
-                host_info["cpu"] = self.parse_cpu(node["status"]["allocatable"]["cpu"])
-                host_info["version"] = node["status"]["nodeInfo"]["kubeletVersion"]
-                for addr in node["status"]["addresses"]:
-                    if addr["type"] == "Hostname":
-                        host_info["hostname"] = addr["address"]
+        try:
+            nodes = self.get_nodes()
+            for node in nodes["items"]:
+                if node["metadata"]["name"] == node_name:
+                    host_info["uuid"] = node["status"]["nodeInfo"]["machineID"]
+                    host_info["cpu"] = self.parse_cpu(
+                        node["status"]["allocatable"]["cpu"]
+                    )
+                    host_info["version"] = node["status"]["nodeInfo"][
+                        "kubeletVersion"
+                    ]
+                    internal_ip = None
+                    hostname = None
+                    for addr in node["status"]["addresses"]:
+                        if addr["type"] == "InternalIP":
+                            internal_ip = addr["address"]
+                        if addr["type"] == "Hostname":
+                            hostname = addr["address"]
+                    host_info["hostname"] = internal_ip or hostname
+        except FailException:
+            logger.warning(
+                "Nodes API inaccessible; deriving IP from node name "
+                f"'{node_name}'"
+            )
+            derived_ip = self._derive_ip_from_ec2_hostname(node_name)
+            if derived_ip:
+                host_info["hostname"] = derived_ip
+            else:
+                host_info["hostname"] = node_name
+
         logger.debug(f"host info: {host_info}")
         return host_info
 
@@ -192,8 +249,8 @@ class KubevirtApi:
         guest_msgs = {}
         guest_msgs.update(self.get_vm_info(guest_name))
         if "hostname" in guest_msgs:
-            guest_msgs["guest_ip"] = f"{guest_msgs['hostname']}:{guest_port}"
             guest_msgs.update(self.get_host_info(guest_msgs["hostname"]))
+            guest_msgs["guest_ip"] = f"{guest_msgs['hostname']}:{guest_port}"
         return guest_msgs
 
     def guest_set_power_state(self, guest_name, state):

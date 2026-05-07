@@ -27,7 +27,7 @@ def test_kubevirt():
     internal_debug = True
 
     # Instantiate PowerCLI object
-    api = KubevirtApi(endpoint, token, internal_debug)
+    api = KubevirtApi(endpoint, token, internal_debug=internal_debug)
 
     # Get the VMHost information
     api.get_nodes_list()

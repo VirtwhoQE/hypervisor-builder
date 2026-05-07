@@ -32,7 +32,7 @@ class AHVaCLI:
         :return: the data after json.loads
         """
         output = json.loads(stdout)
-        if output["status"] is 0:
+        if output["status"] == 0:
             return output["data"]
 
     def set_json_ouput(self):
