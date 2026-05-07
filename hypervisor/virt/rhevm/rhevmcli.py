@@ -30,7 +30,7 @@ class RHEVMCLI:
         :return:
         """
         ret, output = self.ssh.runcmd("hostname")
-        if not ret and output is not None and output is not "":
+        if not ret and output is not None and output != "":
             hostname = output.strip()
             return f"https://{hostname}:443/ovirt-engine"
         else:
@@ -56,7 +56,7 @@ class RHEVMCLI:
         Check if the oVirt manager could be reached.
         :return:
         """
-        cmd = f"echo | ovirt-shell -c -E  'ping'"
+        cmd = "echo | ovirt-shell -c -E  'ping'"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and "success" in output:
             logger.info(f"Succeeded to connect RHEVM({self.server}) shell")
@@ -98,7 +98,7 @@ class RHEVMCLI:
         """
         cmd = "ovirt-shell -c -E 'list hosts' | grep '^name' | awk -F ':' '{print $2}'"
         ret, output = self.ssh.runcmd(cmd)
-        if not ret and output is not None and output is not "":
+        if not ret and output is not None and output != "":
             hosts = output.strip().split("\n")
         else:
             hosts = list()
@@ -168,12 +168,12 @@ class RHEVMCLI:
         option = "grep 'Nmap scan report for' | grep -Eo '([0-9]{1,3}[\.]){3}[0-9]{1,3}'| tail -1"
         cmd = f"nmap -sP -n {gateway} | grep -i -B 2 {guest_mac} | {option}"
         ret, output = SSHConnect(host_ip, host_user, host_pwd).runcmd(cmd)
-        if not ret and output is not None and output is not "":
+        if not ret and output is not None and output != "":
             guest_ip = output.strip()
             logger.info(f"Succeeded to get rhevm guest ip ({guest_ip})")
             return output.strip()
         else:
-            logger.info(f"Failed to get rhevm guest ip")
+            logger.info("Failed to get rhevm guest ip")
 
     def get_gateway(self, host_ip, host_user, host_pwd):
         """
@@ -185,7 +185,7 @@ class RHEVMCLI:
         """
         cmd = f"ip route | grep {host_ip}"
         ret, output = SSHConnect(host_ip, host_user, host_pwd).runcmd(cmd)
-        if not ret and output is not None and output is not "":
+        if not ret and output is not None and output != "":
             output = output.strip().split(" ")
             if len(output) > 0:
                 gateway = output[0]
