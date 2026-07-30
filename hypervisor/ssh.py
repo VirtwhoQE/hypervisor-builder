@@ -1,5 +1,7 @@
 import os
+
 import paramiko
+
 from hypervisor import logger
 
 
@@ -94,16 +96,16 @@ class SSHConnect:
         :param str if_stdout: default to return the stderr
         """
         ssh = self._connect()
-        logger.info(">>> {}".format(cmd))
+        logger.info(f">>> {cmd}")
         stdin, stdout, stderr = ssh.exec_command(cmd)
         code = stdout.channel.recv_exit_status()
         stdout, stderr = stdout.read(), stderr.read()
         ssh.close()
         if if_stdout or not stderr:
-            logger.info("<<< stdout\n{}".format(stdout.decode()))
+            logger.info(f"<<< stdout\n{stdout.decode()}")
             return code, stdout.decode()
         else:
-            logger.info("<<< stderr\n{}".format(stderr.decode()))
+            logger.info(f"<<< stderr\n{stderr.decode()}")
             return code, stderr.decode()
 
     def get_file(self, remote_file, local_file):

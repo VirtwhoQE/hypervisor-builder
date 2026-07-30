@@ -1,14 +1,15 @@
 import json
 import time
 
-from . import ahv_constants
-from hypervisor import logger
-from hypervisor import FailException
 from requests import Session
 from requests.exceptions import ConnectionError, ReadTimeout
 
+from hypervisor import FailException, logger
 
-class AHVApi(object):
+from . import ahv_constants
+
+
+class AHVApi:
     """AHV REST Api interface class"""
 
     NO_RETRY_HTTP_CODES = [400, 404, 500, 502, 503]
@@ -138,18 +139,15 @@ class AHVApi(object):
                 formatted_data.append(dict(entity["status"], **entity["metadata"]))
 
         for ent_obj in formatted_data:
-            if "resources" in ent_obj:
-                if "nodes" in ent_obj["resources"]:
-                    nodes = ent_obj["resources"]["nodes"]
-                    if "hypervisor_server_list" in nodes:
-                        ent_obj["hypervisor_types"] = []
-                        for server in nodes["hypervisor_server_list"]:
-                            ent_obj["hypervisor_types"].append(server["type"])
+            if "resources" in ent_obj and "nodes" in ent_obj["resources"]:
+                nodes = ent_obj["resources"]["nodes"]
+                if "hypervisor_server_list" in nodes:
+                    ent_obj["hypervisor_types"] = []
+                    for server in nodes["hypervisor_server_list"]:
+                        ent_obj["hypervisor_types"].append(server["type"])
 
-            if "kind" in ent_obj:
-                if ent_obj["kind"] == "cluster":
-                    if "uuid" in ent_obj:
-                        ent_obj["cluster_uuid"] = ent_obj["uuid"]
+            if "kind" in ent_obj and ent_obj["kind"] == "cluster" and "uuid" in ent_obj:
+                ent_obj["cluster_uuid"] = ent_obj["uuid"]
 
         return formatted_data
 
@@ -305,7 +303,7 @@ class AHVApi(object):
             host_name_list (list): list of host's name.
         """
         host_name_list = []
-        (url, cmd_method) = self.get_diff_ver_url_and_method(
+        url, cmd_method = self.get_diff_ver_url_and_method(
             cmd_key="list_hosts", intf_version=self._version
         )
 
@@ -337,7 +335,7 @@ class AHVApi(object):
         Returns:
             Vm info (dict)
         """
-        (url, cmd_method) = self.get_diff_ver_url_and_method(
+        url, cmd_method = self.get_diff_ver_url_and_method(
             cmd_key="list_vms", intf_version=self._version
         )
         url = f"{url}/?name={guest_name}"
@@ -384,7 +382,7 @@ class AHVApi(object):
         Return:
             data (dict): Vm information.
         """
-        (url, cmd_method) = self.get_common_ver_url_and_method(cmd_key="get_vm")
+        url, cmd_method = self.get_common_ver_url_and_method(cmd_key="get_vm")
         url = url.format(uuid=uuid)
         res = self.make_rest_call(method=cmd_method, uri=url)
         if res:
@@ -400,7 +398,7 @@ class AHVApi(object):
         Return:
             data (dict): Host information.
         """
-        (url, cmd_method) = self.get_common_ver_url_and_method(cmd_key="get_host")
+        url, cmd_method = self.get_common_ver_url_and_method(cmd_key="get_host")
         url = url.format(uuid=uuid)
         res = self.make_rest_call(method=cmd_method, uri=url)
         if res:
@@ -417,7 +415,7 @@ class AHVApi(object):
         Returns:
             host's cluster name.
         """
-        (url, cmd_method) = self.get_diff_ver_url_and_method(
+        url, cmd_method = self.get_diff_ver_url_and_method(
             cmd_key="list_clusters", intf_version=self._version
         )
         res = self.make_rest_call(method=cmd_method, uri=url)
@@ -427,7 +425,7 @@ class AHVApi(object):
 
         for cluster in formatted_data:
             if "hypervisor_types" in cluster and "cluster_uuid" in cluster:
-                for hypevirsor_type in cluster["hypervisor_types"]:
+                for _hypevirsor_type in cluster["hypervisor_types"]:
                     if cluster["cluster_uuid"] == cluster_uuid:
                         return cluster["name"]
         return None
@@ -484,7 +482,7 @@ class AHVApi(object):
         guest = self.get_vm_by_name(guest_name)
         if len(guest) == 1:
             uuid = guest[0]["uuid"]
-        (url, cmd_method) = self.get_common_ver_url_and_method(
+        url, cmd_method = self.get_common_ver_url_and_method(
             cmd_key="vm_set_power_state"
         )
         url = url.format(uuid=uuid)
@@ -548,7 +546,7 @@ class AHVApi(object):
         before the poll request times out.
         :return: completed_tasks_info
         """
-        (url, cmd_method) = self.get_common_ver_url_and_method(cmd_key="poll_task")
+        url, cmd_method = self.get_common_ver_url_and_method(cmd_key="poll_task")
         body = {
             "completed_tasks": [f"{task_uuid}"],
             "timeout_interval": f"{timeout_interval}",

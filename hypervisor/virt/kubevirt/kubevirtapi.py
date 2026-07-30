@@ -2,12 +2,12 @@ import json
 import math
 import re
 import ssl
-import urllib3
 
-from hypervisor import FailException
-from hypervisor import logger
+import urllib3
 from six import PY3
 from urllib3.util.timeout import Timeout
+
+from hypervisor import FailException, logger
 
 _TIMEOUT = 60
 
@@ -66,12 +66,9 @@ class KubevirtApi:
 
         except urllib3.exceptions.SSLError as e:
             msg = f"{type(e).__name__}\n{str(e)}"
-            raise FailException(msg)
+            raise FailException(msg) from e
 
-        if PY3:
-            data = r.data.decode("utf8")
-        else:
-            data = r.data
+        data = r.data.decode("utf8") if PY3 else r.data
         if self.internal_debug:
             logger.debug(f"Response: {data}")
 
@@ -181,9 +178,7 @@ class KubevirtApi:
                     host_info["cpu"] = self.parse_cpu(
                         node["status"]["allocatable"]["cpu"]
                     )
-                    host_info["version"] = node["status"]["nodeInfo"][
-                        "kubeletVersion"
-                    ]
+                    host_info["version"] = node["status"]["nodeInfo"]["kubeletVersion"]
                     internal_ip = None
                     hostname = None
                     for addr in node["status"]["addresses"]:
@@ -194,8 +189,7 @@ class KubevirtApi:
                     host_info["hostname"] = internal_ip or hostname
         except FailException:
             logger.warning(
-                "Nodes API inaccessible; deriving IP from node name "
-                f"'{node_name}'"
+                "Nodes API inaccessible; deriving IP from node name " f"'{node_name}'"
             )
             derived_ip = self._derive_ip_from_ec2_hostname(node_name)
             if derived_ip:

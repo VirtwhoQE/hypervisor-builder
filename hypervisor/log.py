@@ -1,7 +1,7 @@
-import os
-import time
 import logging
+import os
 import tempfile
+import time
 
 # Log to /var/log/hypervisor-builder — writable on both traditional and
 # bootc image-mode systems (/var is always read-write).  Falls back to
@@ -44,7 +44,7 @@ class Logger:
         self.logger.handlers = []
         self.log_path = _ensure_log_dir()
         self.log_name = os.path.join(
-            self.log_path, "%s.log" % time.strftime("%Y_%m_%d")
+            self.log_path, "{}.log".format(time.strftime("%Y_%m_%d"))
         )
         self.formatter = logging.Formatter(
             "[%(asctime)s] - [%(filename)s] - %(levelname)s: %(message)s",

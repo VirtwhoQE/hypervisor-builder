@@ -1,5 +1,7 @@
-import requests
 import json
+
+import requests
+
 from hypervisor import logger
 
 
@@ -73,10 +75,7 @@ class Esxapi:
             timeout=self.timeout,
         )
 
-        if response.status != 200:
-            return False
-
-        return True
+        return response.status == 200
 
     def guest_search(self, guest_name, uuid_info=False):
         """

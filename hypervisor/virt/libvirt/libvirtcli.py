@@ -1,7 +1,7 @@
-import re
-import time
 import os
 import random
+import re
+import time
 
 from hypervisor import logger
 from hypervisor.ssh import SSHConnect
@@ -31,14 +31,10 @@ class LibvirtCLI:
         ret, output = self.ssh.runcmd(cmd)
         if not ret and "uuid" in output:
             uuid = re.findall(r"<uuid>(.*?)</uuid>", output)[-1].strip()
-            logger.info(
-                "Succeeded to get libvirt host({0}) uuid is: {1}".format(
-                    self.server, uuid
-                )
-            )
+            logger.info(f"Succeeded to get libvirt host({self.server}) uuid is: {uuid}")
             return uuid
         else:
-            logger.error("Failed to check libvirt host({0}) uuid".format(self.server))
+            logger.error(f"Failed to check libvirt host({self.server}) uuid")
             return None
 
     def host_version(self):
@@ -51,13 +47,11 @@ class LibvirtCLI:
         if not ret and "QEMU" in output:
             version = output.split("QEMU")[-1].strip()
             logger.info(
-                "Succeeded to get libvirt host({0}) version is: {1}".format(
-                    self.server, version
-                )
+                f"Succeeded to get libvirt host({self.server}) version is: {version}"
             )
             return version
         else:
-            logger.error("Failed to get libvirt host({0}) version".format(self.server))
+            logger.error(f"Failed to get libvirt host({self.server}) version")
             return None
 
     def host_cpu(self):
@@ -69,12 +63,10 @@ class LibvirtCLI:
         ret, output = self.ssh.runcmd(cmd)
         if not ret and "CPU socket(s)" in output:
             cpu = output.split(":")[1].strip()
-            logger.info(
-                "Succeeded to get libvirt host({0}) cpu : {1}".format(self.server, cpu)
-            )
+            logger.info(f"Succeeded to get libvirt host({self.server}) cpu : {cpu}")
             return cpu
         else:
-            logger.error("Failed to get libvirt host({0}) cpu".format(self.server))
+            logger.error(f"Failed to get libvirt host({self.server}) cpu")
             return None
 
     def guest_search(self, guest_name):
@@ -100,17 +92,13 @@ class LibvirtCLI:
         :param guest_name: the name for the guest
         :return: guest exists, return True, else, return False.
         """
-        cmd = "virsh  dominfo {0} | grep '^Name'".format(guest_name)
+        cmd = f"virsh  dominfo {guest_name} | grep '^Name'"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and guest_name in output:
-            logger.info(
-                "libvirt({0}) guest {1} is exist".format(self.server, guest_name)
-            )
+            logger.info(f"libvirt({self.server}) guest {guest_name} is exist")
             return True
         else:
-            logger.info(
-                "libvirt({0}) guest {1} is not exist".format(self.server, guest_name)
-            )
+            logger.info(f"libvirt({self.server}) guest {guest_name} is not exist")
             return False
 
     def guest_uuid(self, guest_name):
@@ -119,18 +107,14 @@ class LibvirtCLI:
         :param guest_name: the guest name for libvirt guest
         :return: uuid for libvirt guest
         """
-        cmd = "virsh domuuid {0}".format(guest_name)
+        cmd = f"virsh domuuid {guest_name}"
         ret, output = self.ssh.runcmd(cmd)
         if not ret and output is not None:
             uuid = output.strip()
-            logger.info(
-                "Succeeded to get libvirt({0}) guest uuid: {1}".format(
-                    self.server, uuid
-                )
-            )
+            logger.info(f"Succeeded to get libvirt({self.server}) guest uuid: {uuid}")
             return uuid
         else:
-            logger.error("Failed to check libvirt({0}) guest uuid".format(self.server))
+            logger.error(f"Failed to check libvirt({self.server}) guest uuid")
             return None
 
     def guest_status(self, guest_name):
@@ -139,16 +123,16 @@ class LibvirtCLI:
         :param guest_name: name for the specific guest
         :return: the status for the guest
         """
-        cmd = "virsh  domstate {0}".format(guest_name)
+        cmd = f"virsh  domstate {guest_name}"
         ret, output = self.ssh.runcmd(
             cmd,
         )
         if not ret and output.strip() is not None and output.strip() != "":
             status = output.strip()
-            logger.info("libvirt({0}) guest status is: {1}".format(self.server, status))
+            logger.info(f"libvirt({self.server}) guest status is: {status}")
             return status
         else:
-            logger.info("Failed to check libvirt({0}) guest status".format(self.server))
+            logger.info(f"Failed to check libvirt({self.server}) guest status")
             return "false"
 
     def guest_mac(self, guest_name):
@@ -157,21 +141,17 @@ class LibvirtCLI:
         :param guest_name: name for the specific guest
         :return: the mac address for the guest
         """
-        cmd = "virsh dumpxml {0} | grep 'mac address'".format(guest_name)
+        cmd = f"virsh dumpxml {guest_name} | grep 'mac address'"
         ret, output = self.ssh.runcmd(cmd)
         if not ret:
             mac_addr = re.findall(r"mac address='(.*?)'", output)[0]
             if mac_addr is not None or mac_addr != "":
                 logger.info(
-                    "Succeeded to get libvirt({0}) guest mac: {1}".format(
-                        self.server, mac_addr
-                    )
+                    f"Succeeded to get libvirt({self.server}) guest mac: {mac_addr}"
                 )
                 return mac_addr
         else:
-            logger.error(
-                "Failed to get libvirt({0}) guest mac address".format(self.server)
-            )
+            logger.error(f"Failed to get libvirt({self.server}) guest mac address")
             return None
 
     def guest_ip(self, guest_name):
@@ -220,21 +200,17 @@ class LibvirtCLI:
         :param guest_name: name for the specific guest
         :return: the mac address for the guest
         """
-        cmd = "virsh dumpxml {0} | grep 'mac address'".format(guest_name)
+        cmd = f"virsh dumpxml {guest_name} | grep 'mac address'"
         ret, output = self.ssh.runcmd(cmd)
         if ret == 0:
             mac_addr = re.findall(r"mac address='(.*?)'", output)[0]
             if mac_addr is not None or mac_addr != "":
                 logger.info(
-                    "Succeeded to get libvirt({0}) guest mac: {1}".format(
-                        self.server, mac_addr
-                    )
+                    f"Succeeded to get libvirt({self.server}) guest mac: {mac_addr}"
                 )
                 return mac_addr
         else:
-            logger.error(
-                "Failed to get libvirt({0}) guest mac address".format(self.server)
-            )
+            logger.error(f"Failed to get libvirt({self.server}) guest mac address")
             return None
 
     def guest_autostart(self, guest_name):
@@ -243,14 +219,12 @@ class LibvirtCLI:
         :param guest_name: the virtual machines you want to auto start.
         :return: set up successfully, return True, else, return False.
         """
-        cmd = "virsh autostart {0}".format(guest_name)
+        cmd = f"virsh autostart {guest_name}"
         ret, output = self.ssh.runcmd(cmd)
         if not ret:
-            logger.info(
-                "Succeeded to auto start libvirt({0}) guest".format(self.server)
-            )
+            logger.info(f"Succeeded to auto start libvirt({self.server}) guest")
         else:
-            logger.info("Failed to auto start libvirt({0}) guest".format(self.server))
+            logger.info(f"Failed to auto start libvirt({self.server}) guest")
 
     def guest_start(self, guest_name):
         """
@@ -258,19 +232,19 @@ class LibvirtCLI:
         :param guest_name: the virtual machines you want to power on.
         :return: power on successfully, return True, else, return False.
         """
-        cmd = "virsh --connect qemu:///system start {0}".format(guest_name)
+        cmd = f"virsh --connect qemu:///system start {guest_name}"
         ret, output = self.ssh.runcmd(cmd)
         if "Failed to connect socket to '/var/run/libvirt/virtlogd-sock'" in output:
             cmd = "systemctl start virtlogd.socket"
             self.ssh.runcmd(cmd)
-            cmd = "virsh --connect qemu:///system start {0}".format(guest_name)
+            cmd = f"virsh --connect qemu:///system start {guest_name}"
             self.ssh.runcmd(cmd)
             time.sleep(10)
         if self.guest_status(guest_name) == "running":
-            logger.info("Succeeded to start libvirt({0}) guest".format(self.server))
+            logger.info(f"Succeeded to start libvirt({self.server}) guest")
             return True
         else:
-            logger.error("Failed to start libvirt({0}) guest".format(self.server))
+            logger.error(f"Failed to start libvirt({self.server}) guest")
             return False
 
     def guest_stop(self, guest_name):
@@ -279,14 +253,14 @@ class LibvirtCLI:
         :param guest_name: the virtual machines you want to power off.
         :return: stop successfully, return True, else, return False.
         """
-        cmd = "virsh shutdown {0}".format(guest_name)
+        cmd = f"virsh shutdown {guest_name}"
         ret, output = self.ssh.runcmd(cmd)
         time.sleep(5)
         if not ret and self.guest_status(guest_name) == "shut off":
-            logger.info("Succeeded to shutdown libvirt({0}) guest".format(self.server))
+            logger.info(f"Succeeded to shutdown libvirt({self.server}) guest")
             return True
         else:
-            logger.error("Failed to shutdown libvirt({0}) guest".format(self.server))
+            logger.error(f"Failed to shutdown libvirt({self.server}) guest")
             return False
 
     def guest_suspend(self, guest_name):
@@ -295,14 +269,14 @@ class LibvirtCLI:
         :param guest_name: the virtual machines you want to suspend.
         :return: suspend successfully, return True, else, return False.
         """
-        cmd = "virsh suspend {0}".format(guest_name)
+        cmd = f"virsh suspend {guest_name}"
         ret, output = self.ssh.runcmd(cmd)
         time.sleep(5)
         if not ret and self.guest_status(guest_name) == "paused":
-            logger.info("Succeeded to pause libvirt({0}) guest".format(self.server))
+            logger.info(f"Succeeded to pause libvirt({self.server}) guest")
             return True
         else:
-            logger.error("Failed to pause libvirt({0}) guest".format(self.server))
+            logger.error(f"Failed to pause libvirt({self.server}) guest")
             return False
 
     def guest_resume(self, guest_name):
@@ -311,14 +285,14 @@ class LibvirtCLI:
         :param guest_name: the virtual machines you want to resume.
         :return: resume successfully, return True, else, return False.
         """
-        cmd = "virsh resume {0}".format(guest_name)
+        cmd = f"virsh resume {guest_name}"
         ret, output = self.ssh.runcmd(cmd)
         time.sleep(10)
         if not ret and self.guest_status(guest_name) == "running":
-            logger.info("Succeeded to resume libvirt({0}) guest".format(self.server))
+            logger.info(f"Succeeded to resume libvirt({self.server}) guest")
             return True
         else:
-            logger.error("Failed to resume libvirt({0}) guest".format(self.server))
+            logger.error(f"Failed to resume libvirt({self.server}) guest")
             return False
 
     def guest_add(self, guest_name, image_url, xml_url, image_path, xml_path):
@@ -330,7 +304,7 @@ class LibvirtCLI:
         if self.guest_exist(guest_name):
             self.guest_delete(guest_name)
         self.guest_image_download(guest_name, image_url, xml_url, image_path, xml_path)
-        for i in range(5):
+        for _i in range(5):
             if self.guest_exist(guest_name):
                 logger.info(f"Succeeded to add libvirt({self.server}) guest")
                 self.guest_autostart(guest_name)
@@ -381,13 +355,13 @@ class LibvirtCLI:
                 f"chmod a+rwx {image_path}"
             )
             self.ssh.runcmd(cmd)
-            for i in range(5):
+            for _i in range(5):
                 cmd = f"curl -L {image_url} -o {guest_image}"
                 ret, output = self.ssh.runcmd(cmd)
                 if ret == 0:
                     break
                 logger.warning("Failed to download libvirt image, try again...")
-            for i in range(5):
+            for _i in range(5):
                 cmd = f"curl -L {xml_url} -o {guest_xml}"
                 ret, output = self.ssh.runcmd(cmd)
                 if ret == 0:
@@ -436,10 +410,7 @@ class LibvirtCLI:
         """
         cmd = f"if ( curl -o/dev/null -sfI '{url}' ); then echo 'true'; else echo 'false'; fi"
         output = os.popen(cmd).read()
-        if output.strip() == "true":
-            return True
-        else:
-            return False
+        return output.strip() == "true"
 
     def randomMAC(self):
         """
@@ -454,7 +425,7 @@ class LibvirtCLI:
             random.randint(0x00, 0x8F),
             random.randint(0x00, 0xFF),
         ]
-        return ":".join(map(lambda x: "%02x" % x, mac))
+        return ":".join(map(lambda x: f"{x:02x}", mac))
 
     def rhel_version(self):
         """
