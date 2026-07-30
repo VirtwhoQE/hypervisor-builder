@@ -1,6 +1,26 @@
 import os
 import time
 import logging
+import tempfile
+
+# Log to /var/log/hypervisor-builder — writable on both traditional and
+# bootc image-mode systems (/var is always read-write).  Falls back to
+# a temp directory when not running as root (dev machines, CI containers).
+#
+# The previous default placed logs next to the installed package in
+# site-packages/, which is read-only on imagemode.
+_LOG_DIR = "/var/log/hypervisor-builder"
+
+
+def _ensure_log_dir():
+    """Create and return a writable log directory."""
+    try:
+        os.makedirs(_LOG_DIR, exist_ok=True)
+        return _LOG_DIR
+    except OSError:
+        fallback = os.path.join(tempfile.gettempdir(), "hypervisor-builder")
+        os.makedirs(fallback, exist_ok=True)
+        return fallback
 
 
 class Logger:
@@ -18,16 +38,11 @@ class Logger:
         """
         The log message will output to file and console.
         Define the log path, log file, log level, log formatter.
-        The default log directory is logs.
         """
         self.logger = logging.getLogger(logger)
         self.logger.setLevel(logging.DEBUG)
         self.logger.handlers = []
-        self.log_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "logs"
-        )
-        if not os.path.exists(self.log_path):
-            os.mkdir(self.log_path)
+        self.log_path = _ensure_log_dir()
         self.log_name = os.path.join(
             self.log_path, "%s.log" % time.strftime("%Y_%m_%d")
         )
