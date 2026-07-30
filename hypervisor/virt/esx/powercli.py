@@ -111,9 +111,7 @@ class PowerCLI:
         """
         cmd = f"{self.cert} Get-VM -Name {guest_name}"
         ret, _ = self.ssh.runcmd(cmd)
-        if ret:
-            return False
-        return True
+        return not ret
 
     def guest_images(self, host, host_ssh_user, host_ssh_pwd, guest_name, image_path):
         """
@@ -310,9 +308,7 @@ class PowerCLI:
         """
         cmd = f"{self.cert} Get-VMHost -Name {host_name}"
         ret, output = self.ssh.runcmd(cmd)
-        if ret == 0:
-            return True
-        return False
+        return ret == 0
 
     def host_uuid(self, host_name):
         """
@@ -454,10 +450,7 @@ class PowerCLI:
         if ret:
             return False
         else:
-            if self.host_name_get(host_ip) == name:
-                return True
-            else:
-                return False
+            return self.host_name_get(host_ip) == name
 
     def cluster_name_set(self, host_ip, old_cluster_name, new_cluster_name):
         """

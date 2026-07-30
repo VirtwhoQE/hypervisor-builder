@@ -1,9 +1,8 @@
-from hypervisor import FailException
-from hypervisor import logger
-from hypervisor.ssh import SSHConnect
-
-import time
 import random
+import time
+
+from hypervisor import FailException, logger
+from hypervisor.ssh import SSHConnect
 
 
 class RHEVMCLI:
@@ -49,7 +48,7 @@ class RHEVMCLI:
             random.randint(0x00, 0x8F),
             random.randint(0x00, 0xFF),
         ]
-        return ":".join(map(lambda x: "%02x" % x, mac))
+        return ":".join(map(lambda x: f"{x:02x}", mac))
 
     def shell_connection(self):
         """
@@ -214,7 +213,7 @@ class RHEVMCLI:
         :param guest_name: the name of the guest
         :return: the uuid of the disk
         """
-        vm_options = "--parent-vm-name {0}".format(guest_name)
+        vm_options = f"--parent-vm-name {guest_name}"
         cmd = f"ovirt-shell -c -E 'list disks {vm_options}' | grep '^id'"
         ret, output = self.ssh.runcmd(cmd)
         if ret == 0 and "id" in output:
@@ -233,7 +232,7 @@ class RHEVMCLI:
         :param disk: the name of the disk
         :return:
         """
-        vm_options = "--parent-vm-name {0}".format(guest_name)
+        vm_options = f"--parent-vm-name {guest_name}"
         cmd = f"ovirt-shell -c -E 'list disks {vm_options}' | grep '^name'"
         ret, output = self.ssh.runcmd(cmd)
         if ret != 0 or disk not in output:
@@ -241,7 +240,7 @@ class RHEVMCLI:
         disk_uuid = self.guest_disk_uuid(guest_name)
         is_actived_disk = ""
         status = ""
-        for i in range(60):
+        for _i in range(60):
             time.sleep(60)
             if self.guest_disk_is_actived(guest_name):
                 is_actived_disk = "Yes"
@@ -288,10 +287,7 @@ class RHEVMCLI:
         vm_options = f"--parent-vm-name {guest_name}"
         cmd = f"ovirt-shell -c -E 'list disks {vm_options} --show-all' | grep '^active'"
         ret, output = self.ssh.runcmd(cmd)
-        if ret == 0 and "True" in output:
-            return True
-        else:
-            return False
+        return bool(ret == 0 and "True" in output)
 
     def guest_nic(self, guest_name):
         """
